@@ -3,9 +3,11 @@ use macroquad::prelude::Vec2;
 
 pub struct Graph
 {
+  start: Option<u8>,
+  end: Option<u8>,
+  // Key: point id, Value: point position
   points: BTreeMap<u8, Vec2>,
-  // TODO: figure out a good data structure for a line. It needs to store 'from' id, 'to' id and 'length'
-  // IDEA: hashset, key is a point id, value is all other point ids it points to (but the line lengths would need to be added somehow)
+  // Key: Line (2 ids), Value: line length
   lines: HashMap<Line, u16>
 }
 
@@ -13,7 +15,7 @@ impl Graph
 {
   pub fn new() -> Graph
   {
-    return Graph{points: BTreeMap::<u8, Vec2>::new(), lines: HashMap::<Line, u16>::new()};
+    return Graph{start: None, end: None, points: BTreeMap::<u8, Vec2>::new(), lines: HashMap::<Line, u16>::new()};
   }
 
   pub fn add_point(&mut self, coordinates: Vec2)
@@ -38,6 +40,47 @@ impl Graph
     }
 
     self.points.insert(smallest_missing_id, coordinates);
+  }
+
+  pub fn remove_point(&mut self, id: u8)
+  {
+    self.points.remove(&id);
+  }
+
+  pub fn add_line(&mut self)
+  {
+    todo!();
+  }
+
+  pub fn remove_line(&mut self)
+  {
+    todo!();
+  }
+
+  pub fn clear(&mut self)
+  {
+    self.points.clear();
+    self.lines.clear();
+  }
+
+  pub fn set_start(&mut self, id: u8)
+  {
+    todo!();
+  }
+
+  pub fn set_end(&mut self, id: u8)
+  {
+    todo!();
+  }
+
+  pub fn clear_start(&mut self)
+  {
+    self.start = None;
+  }
+
+  pub fn clear_end(&mut self)
+  {
+    self.end = None;
   }
 }
 
