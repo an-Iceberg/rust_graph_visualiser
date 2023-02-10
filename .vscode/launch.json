@@ -1,0 +1,76 @@
+{
+  "configurations": [
+    {
+      "name": "Check",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo check --verbose --color always --message-format human",
+      "terminalName": "Cargo Check",
+      "showTerminal": true
+    },
+    {
+      "name": "Test",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo test --verbose --color always --message-format human",
+      "terminalName": "Cargo Test",
+      "showTerminal": true,
+    },
+    {
+      "name": "Run",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo run --verbose --color always --message-format human",
+      "terminalName": "Cargo Run",
+      "showTerminal": true
+    },
+    {
+      "name": "Build",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo build --verbose --color always --message-format human",
+      "terminalName": "Cargo Build",
+      "showTerminal": true
+    },
+    {
+      "name": "Build WASM",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo build --verbose --color always --message-format human --target wasm32-unknown-unknown",
+      "terminalName": "Cargo Build",
+      "showTerminal": true
+    },
+    {
+      "name": "Run release",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo run --release --verbose --color always --message-format human",
+      "terminalName": "Cargo Run Release",
+      "showTerminal": true
+    },
+    {
+      "name": "Build release",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo build --release --verbose --color always --message-format human",
+      "terminalName": "Cargo Build Release",
+      "showTerminal": true
+    },
+    {
+      "name": "Build release WASM",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "cargo build --release --verbose --color always --message-format human --target wasm32-unknown-unknown",
+      "terminalName": "Cargo Build Release",
+      "showTerminal": true
+    },
+    {
+      "name": "Vite",
+      "type": "f5anything",
+      "request": "launch",
+      "command": "vite ${workspaceFolder}/dist",
+      "terminalName": "Vite",
+      "showTerminal": true
+    },
+  ]
+}
