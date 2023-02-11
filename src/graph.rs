@@ -1,10 +1,11 @@
 use std::collections::{HashMap, BTreeMap};
-use macroquad::prelude::Vec2;
+use macroquad::{prelude::{Vec2, ORANGE, BLACK}, shapes::draw_circle, text::{get_text_center, draw_text}};
 
 pub struct Graph
 {
   start: Option<u8>,
   end: Option<u8>,
+  radius: u8,
   // Key: point id, Value: point position
   points: BTreeMap<u8, Vec2>,
   // Key: Line (2 ids), Value: line length
@@ -15,27 +16,22 @@ impl Graph
 {
   pub fn new() -> Graph
   {
-    return Graph{start: None, end: None, points: BTreeMap::<u8, Vec2>::new(), lines: HashMap::<Line, u16>::new()};
+    return Graph{start: None, end: None, radius: 13, points: BTreeMap::<u8, Vec2>::new(), lines: HashMap::<Line, u16>::new()};
   }
 
   pub fn add_point(&mut self, coordinates: Vec2)
   {
-    let mut smallest_missing_id = 0;
+    let mut smallest_missing_id = 1;
 
     // TODO: tests
     // Finding the smallest missing point id
     for (point_id, _) in self.points.iter()
     {
-      // The next point id should be larger by 1 from the current id
-      if *point_id == smallest_missing_id + 1
-      {
-        smallest_missing_id = *point_id;
-      }
-      // The next point's id is a larger step away than 1, therefore a point id is missing here
-      else
+      // Incrementing the missing id until it doesn't match a given point id
+      if *point_id == smallest_missing_id
       {
         smallest_missing_id += 1;
-        break;
+        continue;
       }
     }
 
@@ -47,12 +43,12 @@ impl Graph
     self.points.remove(&id);
   }
 
-  pub fn add_line(&mut self)
+  pub fn add_line(&mut self, from_id: u8, to_id: u8)
   {
     todo!();
   }
 
-  pub fn remove_line(&mut self)
+  pub fn remove_line(&mut self, from_id: u8, to_id: u8)
   {
     todo!();
   }
@@ -82,9 +78,29 @@ impl Graph
   {
     self.end = None;
   }
+
+  pub fn paint_points(&self)
+  {
+    for (point, coordinates) in self.points.iter()
+    {
+      draw_circle(coordinates.x, coordinates.y, self.radius as f32, ORANGE);
+      let text_center = get_text_center(point.to_string().as_str(), None, 20, 1.0, 0.0);
+      draw_text(point.to_string().as_str(), coordinates.x - text_center.x, coordinates.y - text_center.y, 20.0, BLACK);
+    }
+  }
+
+  pub fn paint_lines(&self)
+  {
+    todo!();
+  }
+
+  pub fn paint_graph(&self)
+  {
+    self.paint_points();
+    //self.paint_lines();
+  }
 }
 
-// Naive implementation of a line
 struct Line
 {
   from: u8,
