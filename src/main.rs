@@ -1,5 +1,8 @@
 mod config;
 mod graph;
+mod utils;
+#[path ="../tests/utils_tests.rs"]
+mod utils_tests;
 
 use graph::*;
 use macroquad::{prelude::*, ui::root_ui, hash};
@@ -12,6 +15,7 @@ async fn main()
   let ui_width = 200;
   let mut line_length = 1.0;
   let mut mode = 0;
+  let mut hovered_point_id: Option<u8> = Option::None;
 
   setup(&mut graph);
 
@@ -19,6 +23,7 @@ async fn main()
   {
     clear_background(Color::from_rgba(10, 0, 20, 255));
 
+    // TODO: style the GUI
     root_ui().window(hash!(), Vec2 { x: screen_width() - ui_width as f32, y: 0.0 }, Vec2 { x: ui_width as f32, y: screen_height() }, |ui|
     {
       ui.combo_box(hash!(), "Mode", &["Move", "Point", "Line", "Path"], &mut mode);
