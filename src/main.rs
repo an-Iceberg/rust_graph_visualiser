@@ -15,14 +15,14 @@ async fn main()
   let ui_width = 200;
   let mut line_length = 1.0;
   let mut mode = 0;
-  let mut hovered_point_id: Option<u8> = Option::None;
 
   setup(&mut graph);
 
   loop
   {
-    clear_background(Color::from_rgba(10, 0, 20, 255));
+    clear_background(Color::from_rgba(20, 0, 40, 255));
 
+    // TODO: extract GUI into separate component
     // TODO: style the GUI
     root_ui().window(hash!(), Vec2 { x: screen_width() - ui_width as f32, y: 0.0 }, Vec2 { x: ui_width as f32, y: screen_height() }, |ui|
     {
@@ -36,7 +36,7 @@ async fn main()
     draw_pill(40.0, 40.0, 40.0, 20.0, ORANGE);
     draw_pill(80.0, 80.0, 80.0, 10.0, Color::from_rgba(0, 255, 255, 255));
 
-    draw_text(format!("{:?}", mouse_position()).as_str(), 0.0, 10.0, 16.0, WHITE);
+    draw_text(format!("Mouse:{:?}\nFPS:{}", mouse_position(), get_fps()).as_str(), 0.0, 10.0, 16.0, WHITE);
 
     graph.paint_graph();
 
