@@ -22,6 +22,64 @@ async fn main()
   {
     clear_background(Color::from_rgba(20, 0, 40, 255));
 
+    match
+      (
+        mode,
+        is_mouse_button_pressed(MouseButton::Left),
+        is_mouse_button_down(MouseButton::Left),
+        is_mouse_button_released(MouseButton::Left),
+        is_mouse_button_pressed(MouseButton::Right),
+        graph.get_hovered_point_id(),
+        graph.get_selected_point_id()
+      )
+    {
+      // Select a point to be moved around
+      (0, true, _, _, _, Some(hovered_point_id), _) =>
+      {
+        graph.set_selected_point_id(Some(hovered_point_id));
+      }
+
+      // Move a point around
+      (0, _, true, _, _, _, Some(selected_point_id)) =>
+      {
+        let position = mouse_position();
+
+        // Making sure that the point is only moved within screenspace and not outside
+        if
+          utils::is_point_in_rectangle(
+            position.0,
+            position.1,
+            graph.get_radius() as f32,
+            graph.get_radius() as f32,
+            screen_width() - (ui_width as f32 + (2.0 * graph.get_radius() as f32)),
+            screen_height() - (2.0 * graph.get_radius() as f32)
+          )
+        {
+          graph.set_point_coordinates(selected_point_id, Vec2 { x: position.0, y: position.1 });
+        }
+      }
+
+      // Releaseing the selected point
+      (0, _, _, true, _, _, _) =>
+      {
+        graph.set_selected_point_id(None);
+      }
+
+      // Create a point
+      (1, true, false, false, false, Some(hovered_point_id), None) => {}
+
+      // Remove a point
+      (1, false, false, false, true, Some(hovered_point_id), Some(selected_point_id)) => {}
+
+      // Line
+      (2, true, false, false, false, Some(hovered_point_id), None) => {}
+
+      // Path
+      (3, true, false, false, false, Some(hovered_point_id), None) => {}
+
+      (_, _, _, _, _, _, _) => ()
+    }
+
     // TODO: extract GUI into separate component
     // TODO: style the GUI
     root_ui().window(hash!(), Vec2 { x: screen_width() - ui_width as f32, y: 0.0 }, Vec2 { x: ui_width as f32, y: screen_height() }, |ui|
@@ -36,7 +94,7 @@ async fn main()
     draw_pill(40.0, 40.0, 40.0, 20.0, ORANGE);
     draw_pill(80.0, 80.0, 80.0, 10.0, Color::from_rgba(0, 255, 255, 255));
 
-    draw_text(format!("Mouse:{:?}\nFPS:{}", mouse_position(), get_fps()).as_str(), 0.0, 10.0, 16.0, WHITE);
+    draw_text(format!("Mouse:{:?}\nFPS:{} selected_point:{} hovered_point:{}", mouse_position(), get_fps(), graph.get_selected_point_id().unwrap_or(0), graph.get_hovered_point_id().unwrap_or(0)).as_str(), 0.0, 10.0, 16.0, WHITE);
 
     graph.paint_graph();
 
