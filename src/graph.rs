@@ -57,7 +57,7 @@ impl Graph
   pub fn add_point(&mut self, coordinates: Vec2)
   {
     // Limiting the amount of available points to 100
-    if self.points_amount() > self.max_amount_of_points as usize
+    if self.points_amount() >= self.max_amount_of_points as usize
     {
       return;
     }
