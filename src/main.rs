@@ -180,6 +180,8 @@ async fn main()
           {
             ui.label(None, "Left click: select another");
             ui.label(None, "  point to make a line");
+            ui.label(None, "Right click: select another");
+            ui.label(None, "  point to delete a line");
           }
         }
 
