@@ -1,8 +1,6 @@
 mod config;
 mod graph;
 mod utils;
-#[path ="../tests/utils_tests.rs"]
-mod utils_tests;
 
 use std::ops::Div;
 
@@ -174,7 +172,7 @@ async fn main()
 
           if graph.selected_point_id == None
           {
-            ui.label(None, "Left click: selecte a point");
+            ui.label(None, "Left click: select a point");
           }
           else
           {
@@ -203,7 +201,7 @@ async fn main()
       // TODO: Add user instructions
 
       // TODO: Add sample graphs
-      // TODO: Adjustements for point radius, arrowhead etc.
+      // TODO: Adjustments for point radius, arrowhead etc.
       // TODO: FPS
     });
 

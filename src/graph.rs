@@ -29,12 +29,31 @@ pub(crate) struct Graph
   path: Option<Vec<u8>>
 }
 
-// TODO: tests
+impl Default for Graph
+{
+  fn default() -> Self
+  {
+    return Graph {
+      start: None,
+      end: None,
+      hovered_point_id: None,
+      selected_point_id: None,
+      has_hovered_point_been_checked: false,
+      max_amount_of_points: 100,
+      radius: 13,
+      padding: 3,
+      points: BTreeMap::<u8, Vec2>::new(),
+      lines: HashMap::<Line, u16>::new(),
+      path: None
+    };
+  }
+}
+
 impl Graph
 {
   pub fn new() -> Graph
   {
-    return Graph{
+    return Graph {
       start: None,
       end: None,
       hovered_point_id: None,
@@ -174,6 +193,8 @@ impl Graph
     {
       return;
     }
+
+    // TODO: implement Dijkstra's shortest path algorithm
 
     todo!();
   }
@@ -387,3 +408,145 @@ impl PartialEq for Line
 }
 
 impl Eq for Line {}
+
+// Tests
+
+#[cfg(test)]
+mod tests
+{
+  use std::ops::Mul;
+  use macroquad::prelude::Vec2;
+  use rand::*;
+  use super::Graph;
+
+  fn vec2_random_coordinates(radius: f32) -> Vec2
+  {
+    return Vec2 {
+      x: thread_rng().gen_range(radius..(1290.0 - 200.0 - radius)),
+      y: thread_rng().gen_range(radius..(720.0 - radius))
+    };
+  }
+
+  fn graph(amount_of_points: u8) -> Graph
+  {
+    let mut graph = Graph::new();
+    for _i in 1..=amount_of_points
+    {
+      graph.add_point(vec2_random_coordinates(graph.radius as f32));
+    }
+
+    return graph;
+  }
+
+  #[test]
+  fn add_some_points_test()
+  {
+    // Creating a graph
+    let mut is_graph = Graph::new();
+    for _i in 1..=3
+    {
+      is_graph.add_point(vec2_random_coordinates(is_graph.radius as f32));
+    }
+
+    // Creating the values it should have
+    let mut should_ids: Vec<u8> = Vec::new();
+    for id in 1..=3
+    {
+      should_ids.push(id);
+    }
+
+    // Comparing the two for equality
+    for (is_id, should_id) in is_graph.points.keys().zip(should_ids.iter())
+    {
+      assert_eq!(*is_id, *should_id);
+    }
+  }
+
+  #[test]
+  fn add_many_points_test()
+  {
+    // Creating the graph
+    let mut is_graph = Graph::new();
+    for _i in 1..=50
+    {
+      is_graph.add_point(vec2_random_coordinates(is_graph.get_radius() as f32))
+    }
+
+    // Creating the data that should be in the graph
+    let mut should_ids: Vec<u8> = Vec::new();
+    for id in 1..=50
+    {
+      should_ids.push(id);
+    }
+
+    // Comparing for equality
+    for (is_id, should_id) in is_graph.points.keys().zip(should_ids.iter())
+    {
+      assert_eq!(*is_id, *should_id);
+    }
+  }
+
+  #[test]
+  fn max_amount_of_points_test()
+  {
+    // Creating graph and "adding" 1_000 points to it
+    let mut is_graph = Graph::new();
+    for _i in 0..1_000
+    {
+      is_graph.add_point(vec2_random_coordinates(is_graph.radius as f32));
+    }
+
+    // The graph should still only have 100 points
+    assert_eq!(is_graph.points.len(), 100);
+  }
+
+  #[test]
+  fn remove_points_test()
+  {
+    // Creating a graph
+    let mut is_graph = graph(10);
+
+    // Removing every second point
+    for id in 1..=5
+    {
+      is_graph.remove_point(id * 2);
+    }
+
+    // Creating the ids the resulting graph should have
+    let mut should_ids: Vec<u8> = Vec::new();
+    for id in 1..=5
+    {
+      should_ids.push(id.mul(2 as u8) - 1);
+    }
+
+    // Comparing for equality
+    for (is_id, should_id) in is_graph.points.keys().zip(should_ids.iter())
+    {
+      assert_eq!(*is_id, *should_id);
+    }
+  }
+
+  #[test]
+  #[ignore = "not yet implemented"]
+  fn shortest_path_small()
+  {
+    // TODO
+    todo!();
+  }
+
+  #[test]
+  #[ignore = "not yet implemented"]
+  fn shortest_path_medium()
+  {
+    // TODO
+    todo!();
+  }
+
+  #[test]
+  #[ignore = "not yet implemented"]
+  fn shortest_path_large()
+  {
+    // TODO
+    todo!();
+  }
+}
