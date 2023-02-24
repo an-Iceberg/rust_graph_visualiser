@@ -201,9 +201,21 @@ async fn main()
       // TODO: Add user instructions
 
       // TODO: Add sample graphs
+
       // TODO: Adjustments for point radius, arrowhead etc.
       // TODO: FPS
     });
+
+    // ! dbg
+    if is_key_pressed(KeyCode::P)
+    {
+      graph.print_graph_data();
+    }
+    // ! dbg
+    if is_key_pressed(KeyCode::S)
+    {
+      graph.insert_small_graph();
+    }
 
     graph.paint_graph();
 

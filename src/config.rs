@@ -9,6 +9,6 @@ pub fn window_config() -> Conf
     window_height: 720,
     fullscreen: false,
     window_resizable: false,
-    ..Default::default()
+    ..Conf::default()
   };
 }

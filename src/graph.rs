@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, BTreeMap}, ops::{Mul, Div}};
+use std::{collections::{HashMap, BTreeMap}, ops::{Mul, Div}, fmt::Display};
 use macroquad::{prelude::{Vec2, ORANGE, BLACK, mouse_position, MAGENTA, YELLOW, GREEN, Color}, shapes::{draw_circle, draw_circle_lines, draw_line, draw_triangle, draw_rectangle}, text::{get_text_center, draw_text, measure_text}};
 
 use crate::{utils, draw_pill};
@@ -19,13 +19,23 @@ pub(crate) struct Graph
   radius: u8,
   padding: u8,
 
-  /// Key: point id, Value: point position
+  /// Contains all data for the points
+  ///
+  /// Key: point id
+  ///
+  /// Value: point position
   points: BTreeMap<u8, Vec2>,
 
-  /// Key: Line (2 ids), Value: line length
+  /// Contains all data for the lines
+  ///
+  /// Key: Line (2 ids)
+  ///
+  ///  Value: line length
   lines: HashMap<Line, u16>,
 
-  /// The path is a vector of all the point ids that the graph traverses; the 0th element is the start, the last element is the end
+  /// The path is a vector of all the point ids that the graph traverses
+  ///
+  /// The 0th element is the start, the last element is the end
   path: Option<Vec<u8>>
 }
 
@@ -189,7 +199,7 @@ impl Graph
   /// Finds the shortest path from the start to the end point using dijkstra's shortest path algorithm
   pub fn find_shortest_path(&mut self)
   {
-    if self.start == None || self.end == None
+    if self.start.is_none() || self.end.is_none()
     {
       return;
     }
@@ -215,6 +225,7 @@ impl Graph
       self.find_hovered_point();
     }
 
+    // TODO: consider replacing this with Option::inspect
     // Painting an outline for the hovered point (if it exists)
     if let Some(hovered_point_id) = self.hovered_point_id
     {
@@ -372,6 +383,7 @@ impl Graph
       self.paint_points();
     }
 
+    // TODO: consider replacing this with Option::inspect
     // Paints start label
     if let Some(start_id) = self.start
     {
@@ -381,6 +393,7 @@ impl Graph
       }
     }
 
+    // TODO: consider replacing this with Option::inspect
     // Paints end label
     if let Some(end_id) = self.end
     {
@@ -390,8 +403,87 @@ impl Graph
       }
     }
   }
+
+  pub fn print_graph_data(&self)
+  {
+    println!("Points:");
+    self.points
+      .iter()
+      .for_each(|point|
+      {
+        println!("{}: {}", point.0, point.1);
+      });
+
+    println!("Lines:");
+    self.lines
+      .iter()
+      .for_each(|line|
+      {
+        println!("{}: {}", line.0, line.1);
+      });
+
+    match self.start
+    {
+      Some(id) => println!("Start: {}", id),
+      None => println!("Start: None")
+    }
+
+    match self.end
+    {
+      Some(id) => println!("End: {}", id),
+      None => println!("End: None")
+    }
+  }
+
+  /// Replaces the current graph with a small, premade one
+  pub fn insert_small_graph(&mut self)
+  {
+    self.clear();
+
+    self.points = BTreeMap::from([
+      (1, Vec2 { x: 942.0, y: 355.0 }),
+      (2, Vec2 { x: 720.0, y: 208.0 }),
+      (3, Vec2 { x: 198.0, y: 342.0 }),
+      (4, Vec2 { x: 463.0, y: 507.0 }),
+      (5, Vec2 { x: 735.0, y: 513.0 }),
+      (6, Vec2 { x: 458.0, y: 346.0 }),
+      (7, Vec2 { x: 468.0, y: 202.0 }),
+      (8, Vec2 { x: 721.0, y: 360.0 }),
+    ]);
+
+    self.lines = HashMap::<Line, u16>::from([
+      (Line { from: 4, to: 5 }, 3),
+      (Line { from: 3, to: 6 }, 5),
+      (Line { from: 6, to: 8 }, 4),
+      (Line { from: 7, to: 2 }, 5),
+      (Line { from: 2, to: 1 }, 5),
+      (Line { from: 6, to: 2 }, 7),
+      (Line { from: 4, to: 8 }, 5),
+      (Line { from: 8, to: 1 }, 4),
+      (Line { from: 3, to: 7 }, 4),
+      (Line { from: 3, to: 4 }, 7),
+      (Line { from: 7, to: 8 }, 6),
+      (Line { from: 6, to: 5 }, 8),
+      (Line { from: 5, to: 1 }, 3),
+    ]);
+  }
+
+  pub fn insert_medium_graph(&mut self)
+  {
+    self.clear();
+
+    todo!();
+  }
+
+  pub fn insert_large_graph(&mut self)
+  {
+    self.clear();
+
+    todo!();
+  }
 }
 
+/// The line struct
 #[derive(Hash)]
 struct Line
 {
@@ -409,15 +501,25 @@ impl PartialEq for Line
 
 impl Eq for Line {}
 
+impl Display for Line
+{
+  fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+  {
+    return write!(formatter, "({}, {})", self.from, self.to);
+  }
+}
+
 // Tests
 
 #[cfg(test)]
 mod tests
 {
-  use std::ops::Mul;
+  use std::{ops::Mul, collections::{BTreeMap, HashMap}};
   use macroquad::prelude::Vec2;
   use rand::*;
-  use super::Graph;
+  use crate::graph::Line;
+
+use super::Graph;
 
   fn vec2_random_coordinates(radius: f32) -> Vec2
   {
@@ -527,11 +629,60 @@ mod tests
   }
 
   #[test]
-  #[ignore = "not yet implemented"]
   fn shortest_path_small()
   {
-    // TODO
-    todo!();
+    let mut graph = Graph {
+      points: BTreeMap::<u8, Vec2>::from([
+        (1, Vec2 { x: 942.0, y: 355.0 }),
+        (2, Vec2 { x: 720.0, y: 208.0 }),
+        (3, Vec2 { x: 198.0, y: 342.0 }),
+        (4, Vec2 { x: 463.0, y: 507.0 }),
+        (5, Vec2 { x: 735.0, y: 513.0 }),
+        (6, Vec2 { x: 458.0, y: 346.0 }),
+        (7, Vec2 { x: 468.0, y: 202.0 }),
+        (8, Vec2 { x: 721.0, y: 360.0 }),
+      ]),
+      lines: HashMap::<Line, u16>::from([
+        (Line { from: 4, to: 5 }, 3),
+        (Line { from: 3, to: 6 }, 5),
+        (Line { from: 6, to: 8 }, 4),
+        (Line { from: 7, to: 2 }, 5),
+        (Line { from: 2, to: 1 }, 5),
+        (Line { from: 6, to: 2 }, 7),
+        (Line { from: 4, to: 8 }, 5),
+        (Line { from: 8, to: 1 }, 4),
+        (Line { from: 3, to: 7 }, 4),
+        (Line { from: 3, to: 4 }, 7),
+        (Line { from: 7, to: 8 }, 6),
+        (Line { from: 6, to: 5 }, 8),
+        (Line { from: 5, to: 1 }, 3),
+      ]),
+      start: Some(3),
+      end: Some(1),
+      ..Graph::default()
+    };
+
+    // Shortest paths are either [3, 4, 5, 1] or [3, 6, 8, 1]
+    let should_path_1: Vec<u8> = vec![3, 4, 5, 1];
+    let should_path_2: Vec<u8> = vec![3, 6, 8, 1];
+
+    graph.find_shortest_path();
+
+    match graph.path
+    {
+      Some(path) =>
+      {
+        path
+        .iter()
+        .zip(should_path_1.iter())
+        .zip(should_path_2.iter())
+        .for_each(|((path_id, should_id_1), should_id_2)|
+        {
+          assert!(*path_id == *should_id_1 || *path_id == *should_id_2);
+        });
+      }
+      None => panic!("No path exists")
+    }
   }
 
   #[test]
@@ -545,6 +696,30 @@ mod tests
   #[test]
   #[ignore = "not yet implemented"]
   fn shortest_path_large()
+  {
+    // TODO
+    todo!();
+  }
+
+  #[test]
+  #[ignore = "not yet implemented"]
+  fn start_and_end_are_within_graph()
+  {
+    // TODO
+    todo!();
+  }
+
+  #[test]
+  #[ignore = "not yet implemented"]
+  fn no_possible_path()
+  {
+    // TODO
+    todo!();
+  }
+
+  #[test]
+  #[ignore = "not yet implemented"]
+  fn disconnected_graph()
   {
     // TODO
     todo!();
