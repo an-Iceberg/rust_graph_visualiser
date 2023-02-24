@@ -953,4 +953,6 @@ use super::Graph;
     // TODO
     todo!();
   }
+
+  // TODO: add test cases for cyclical graphs (it should work for dijkstra coz each node is marked as visited)
 }
