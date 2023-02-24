@@ -3,6 +3,9 @@ use macroquad::{prelude::{Vec2, ORANGE, BLACK, mouse_position, MAGENTA, YELLOW, 
 
 use crate::{utils, draw_pill};
 
+/// ### Graph
+///
+/// It contains a lot
 pub(crate) struct Graph
 {
   pub(crate) start: Option<u8>,
@@ -435,7 +438,7 @@ impl Graph
     }
   }
 
-  /// Replaces the current graph with a small, premade one
+  /// Replaces the current graph with a small one
   pub fn insert_small_graph(&mut self)
   {
     self.clear();
@@ -468,11 +471,45 @@ impl Graph
     ]);
   }
 
+  /// Replaces the current graph with a medium-sized one
   pub fn insert_medium_graph(&mut self)
   {
     self.clear();
 
-    todo!();
+    self.points = BTreeMap::<u8, Vec2>::from([
+      (1, Vec2 { x: 959.0, y: 211.0 }),
+      (2, Vec2 { x: 967.0, y: 394.0 }),
+      (3, Vec2 { x: 946.0, y: 532.0 }),
+      (4, Vec2 { x: 144.0, y: 377.0 }),
+      (5, Vec2 { x: 775.0, y: 295.0 }),
+      (6, Vec2 { x: 734.0, y: 523.0 }),
+      (7, Vec2 { x: 559.0, y: 493.0 }),
+      (8, Vec2 { x: 570.0, y: 361.0 }),
+      (9, Vec2 { x: 569.0, y: 200.0 }),
+      (10, Vec2 { x: 353.0, y: 206.0 }),
+      (11, Vec2 { x: 355.0, y: 350.0 }),
+      (12, Vec2 { x: 342.0, y: 488.0 }),
+    ]);
+
+    self.lines = HashMap::<Line, u16>::from([
+      (Line { from: 11, to: 7 }, 4),
+      (Line { from: 8, to: 2 }, 5),
+      (Line { from: 4, to: 10 }, 4),
+      (Line { from: 12, to: 7 }, 4),
+      (Line { from: 4, to: 12 }, 6),
+      (Line { from: 8, to: 6 }, 4),
+      (Line { from: 6, to: 3 }, 20),
+      (Line { from: 8, to: 5 }, 3),
+      (Line { from: 12, to: 8 }, 2),
+      (Line { from: 9, to: 5 }, 3),
+      (Line { from: 11, to: 8 }, 3),
+      (Line { from: 4, to: 11 }, 5),
+      (Line { from: 5, to: 1 }, 1),
+      (Line { from: 9, to: 1 }, 5),
+      (Line { from: 10, to: 9 }, 4),
+      (Line { from: 7, to: 6 }, 7),
+      (Line { from: 5, to: 2 }, 2),
+    ]);
   }
 
   pub fn insert_large_graph(&mut self)
@@ -483,7 +520,9 @@ impl Graph
   }
 }
 
-/// The line struct
+/// ### The line struct
+///
+/// It contains two ids: one is the source and the other is the target of the line
 #[derive(Hash)]
 struct Line
 {
@@ -631,66 +670,256 @@ use super::Graph;
   #[test]
   fn shortest_path_small()
   {
-    let mut graph = Graph {
-      points: BTreeMap::<u8, Vec2>::from([
-        (1, Vec2 { x: 942.0, y: 355.0 }),
-        (2, Vec2 { x: 720.0, y: 208.0 }),
-        (3, Vec2 { x: 198.0, y: 342.0 }),
-        (4, Vec2 { x: 463.0, y: 507.0 }),
-        (5, Vec2 { x: 735.0, y: 513.0 }),
-        (6, Vec2 { x: 458.0, y: 346.0 }),
-        (7, Vec2 { x: 468.0, y: 202.0 }),
-        (8, Vec2 { x: 721.0, y: 360.0 }),
-      ]),
-      lines: HashMap::<Line, u16>::from([
-        (Line { from: 4, to: 5 }, 3),
-        (Line { from: 3, to: 6 }, 5),
-        (Line { from: 6, to: 8 }, 4),
-        (Line { from: 7, to: 2 }, 5),
-        (Line { from: 2, to: 1 }, 5),
-        (Line { from: 6, to: 2 }, 7),
-        (Line { from: 4, to: 8 }, 5),
-        (Line { from: 8, to: 1 }, 4),
-        (Line { from: 3, to: 7 }, 4),
-        (Line { from: 3, to: 4 }, 7),
-        (Line { from: 7, to: 8 }, 6),
-        (Line { from: 6, to: 5 }, 8),
-        (Line { from: 5, to: 1 }, 3),
-      ]),
-      start: Some(3),
-      end: Some(1),
-      ..Graph::default()
-    };
-
-    // Shortest paths are either [3, 4, 5, 1] or [3, 6, 8, 1]
-    let should_path_1: Vec<u8> = vec![3, 4, 5, 1];
-    let should_path_2: Vec<u8> = vec![3, 6, 8, 1];
-
-    graph.find_shortest_path();
-
-    match graph.path
+    // First case
     {
-      Some(path) =>
+      let mut graph = Graph {
+        points: BTreeMap::<u8, Vec2>::from([
+          (1, Vec2 { x: 942.0, y: 355.0 }),
+          (2, Vec2 { x: 720.0, y: 208.0 }),
+          (3, Vec2 { x: 198.0, y: 342.0 }),
+          (4, Vec2 { x: 463.0, y: 507.0 }),
+          (5, Vec2 { x: 735.0, y: 513.0 }),
+          (6, Vec2 { x: 458.0, y: 346.0 }),
+          (7, Vec2 { x: 468.0, y: 202.0 }),
+          (8, Vec2 { x: 721.0, y: 360.0 }),
+        ]),
+        lines: HashMap::<Line, u16>::from([
+          (Line { from: 4, to: 5 }, 3),
+          (Line { from: 3, to: 6 }, 5),
+          (Line { from: 6, to: 8 }, 4),
+          (Line { from: 7, to: 2 }, 5),
+          (Line { from: 2, to: 1 }, 5),
+          (Line { from: 6, to: 2 }, 7),
+          (Line { from: 4, to: 8 }, 5),
+          (Line { from: 8, to: 1 }, 4),
+          (Line { from: 3, to: 7 }, 4),
+          (Line { from: 3, to: 4 }, 7),
+          (Line { from: 7, to: 8 }, 6),
+          (Line { from: 6, to: 5 }, 8),
+          (Line { from: 5, to: 1 }, 3),
+        ]),
+        start: Some(3),
+        end: Some(1),
+        ..Graph::default()
+      };
+
+      // Shortest paths are either [3, 4, 5, 1] or [3, 6, 8, 1]
+      let should_path_1: Vec<u8> = vec![3, 4, 5, 1];
+      let should_path_2: Vec<u8> = vec![3, 6, 8, 1];
+
+      graph.find_shortest_path();
+
+      match graph.path
       {
-        path
-        .iter()
-        .zip(should_path_1.iter())
-        .zip(should_path_2.iter())
-        .for_each(|((path_id, should_id_1), should_id_2)|
+        Some(path) =>
         {
-          assert!(*path_id == *should_id_1 || *path_id == *should_id_2);
-        });
+          path
+          .iter()
+          .zip(should_path_1.iter())
+          .zip(should_path_2.iter())
+          .for_each(|((path_id, should_id_1), should_id_2)|
+          {
+            assert!(*path_id == *should_id_1 || *path_id == *should_id_2);
+          });
+        }
+        None => panic!("A path should have been found")
       }
-      None => panic!("No path exists")
+    }
+
+    // Second case
+    {
+      let mut graph = Graph {
+        points: BTreeMap::<u8, Vec2>::from([
+          (1, Vec2 { x: 783.0, y: 102.0 }),
+          (2, Vec2 { x: 412.0, y: 295.0 }),
+          (3, Vec2 { x: 680.0, y: 308.0 }),
+          (4, Vec2 { x: 509.0, y: 459.0 }),
+          (5, Vec2 { x: 330.0, y: 603.0 }),
+          (6, Vec2 { x: 160.0, y: 442.0 }),
+          (7, Vec2 { x: 174.0, y: 196.0 }),
+          (8, Vec2 { x: 411.0, y: 78.0 }),
+          (9, Vec2 { x: 1003.0, y: 239.0 }),
+        ]),
+        lines: HashMap::<Line, u16>::from([
+          (Line { from: 4, to: 5 }, 2),
+          (Line { from: 3, to: 4 }, 3),
+          (Line { from: 2, to: 6 }, 3),
+          (Line { from: 1, to: 9 }, 7),
+          (Line { from: 4, to: 2 }, 1),
+          (Line { from: 9, to: 3 }, 1),
+          (Line { from: 6, to: 2 }, 3),
+          (Line { from: 7, to: 8 }, 2),
+          (Line { from: 2, to: 4 }, 1),
+          (Line { from: 2, to: 8 }, 3),
+          (Line { from: 2, to: 7 }, 5),
+          (Line { from: 2, to: 1 }, 1),
+          (Line { from: 5, to: 6 }, 2),
+          (Line { from: 1, to: 2 }, 1),
+          (Line { from: 3, to: 9 }, 1),
+          (Line { from: 4, to: 3 }, 3),
+          (Line { from: 1, to: 8 }, 1),
+          (Line { from: 8, to: 1 }, 1),
+          (Line { from: 6, to: 7 }, 2),
+          (Line { from: 8, to: 7 }, 2),
+          (Line { from: 8, to: 2 }, 3),
+          (Line { from: 2, to: 3 }, 1),
+          (Line { from: 7, to: 2 }, 5),
+          (Line { from: 9, to: 1 }, 7),
+          (Line { from: 3, to: 2 }, 1),
+          (Line { from: 5, to: 4 }, 2),
+          (Line { from: 6, to: 5 }, 2),
+          (Line { from: 7, to: 6 }, 2),
+        ]),
+        start: Some(7),
+        end: Some(9),
+        ..Graph::default()
+      };
+
+      let should_path = vec![7, 8, 1, 2, 3, 9];
+
+      graph.find_shortest_path();
+
+      match graph.path
+      {
+        Some(path) =>
+        {
+          path
+          .iter()
+          .zip(should_path.iter())
+          .for_each(|(path_id, should_id)|
+          {
+            assert_eq!(*path_id, *should_id);
+          });
+        }
+        None => panic!("A path should have been found")
+      }
     }
   }
 
   #[test]
-  #[ignore = "not yet implemented"]
   fn shortest_path_medium()
   {
-    // TODO
-    todo!();
+    let mut graph = Graph {
+      points: BTreeMap::<u8, Vec2>::from([
+        (1, Vec2 { x: 959.0, y: 211.0 }),
+        (2, Vec2 { x: 967.0, y: 394.0 }),
+        (3, Vec2 { x: 946.0, y: 532.0 }),
+        (4, Vec2 { x: 144.0, y: 377.0 }),
+        (5, Vec2 { x: 775.0, y: 295.0 }),
+        (6, Vec2 { x: 734.0, y: 523.0 }),
+        (7, Vec2 { x: 559.0, y: 493.0 }),
+        (8, Vec2 { x: 570.0, y: 361.0 }),
+        (9, Vec2 { x: 569.0, y: 200.0 }),
+        (10, Vec2 { x: 353.0, y: 206.0 }),
+        (11, Vec2 { x: 355.0, y: 350.0 }),
+        (12, Vec2 { x: 342.0, y: 488.0 }),
+      ]),
+      lines: HashMap::<Line, u16>::from([
+        (Line { from: 11, to: 7 }, 4),
+        (Line { from: 8, to: 2 }, 5),
+        (Line { from: 4, to: 10 }, 4),
+        (Line { from: 12, to: 7 }, 4),
+        (Line { from: 4, to: 12 }, 6),
+        (Line { from: 8, to: 6 }, 4),
+        (Line { from: 6, to: 3 }, 20),
+        (Line { from: 8, to: 5 }, 3),
+        (Line { from: 12, to: 8 }, 2),
+        (Line { from: 9, to: 5 }, 3),
+        (Line { from: 11, to: 8 }, 3),
+        (Line { from: 4, to: 11 }, 5),
+        (Line { from: 5, to: 1 }, 1),
+        (Line { from: 9, to: 1 }, 5),
+        (Line { from: 10, to: 9 }, 4),
+        (Line { from: 7, to: 6 }, 7),
+        (Line { from: 5, to: 2 }, 2),
+      ]),
+      start: Some(4),
+      end: None,
+      ..Graph::default()
+    };
+
+    // First end
+    {
+      let should_path_1: Vec<u8> = vec![4, 10, 9, 5, 1];
+      let should_path_2: Vec<u8> = vec![4, 11, 8, 5, 1];
+      let should_path_3: Vec<u8> = vec![4, 12, 9, 5, 1];
+
+      graph.end = Some(1);
+      graph.find_shortest_path();
+
+      match graph.path
+      {
+        Some(ref path) =>
+        {
+          path
+          .iter()
+          .zip(should_path_1.iter())
+          .zip(should_path_2.iter())
+          .zip(should_path_3.iter())
+          .for_each(|(((path_id, should_id_1), should_id_2), should_id_3)|
+          {
+            assert!(*path_id == *should_id_1 || *path_id == *should_id_2 || *path_id == *should_id_3);
+          });
+        }
+        None => panic!("A path should have been found")
+      }
+    }
+
+    // Second end
+    {
+      let should_path_1: Vec<u8> = vec![4, 10, 9, 5, 2];
+      let should_path_2: Vec<u8> = vec![4, 11, 8, 5, 2];
+      let should_path_3: Vec<u8> = vec![4, 11, 8, 2];
+      let should_path_4: Vec<u8> = vec![4, 12, 8, 5, 2];
+      let should_path_5: Vec<u8> = vec![4, 12, 8, 2];
+
+      graph.end = Some(2);
+      graph.find_shortest_path();
+
+      match graph.path
+      {
+        Some(ref path) =>
+        {
+          path
+          .iter()
+          .zip(should_path_1.iter())
+          .zip(should_path_2.iter())
+          .zip(should_path_3.iter())
+          .zip(should_path_4.iter())
+          .zip(should_path_5.iter())
+          .for_each(|(((((path_id, should_id_1), should_id_2), should_id_3), should_id_4), should_id_5)|
+          {
+            assert!(*path_id == *should_id_1 || *path_id == *should_id_2 || *path_id == *should_id_3 || *path_id == *should_id_4 || *path_id == *should_id_5);
+          });
+        }
+        None => panic!("A path should have been found")
+      }
+    }
+
+    // Third end
+    {
+      let should_path_1: Vec<u8> = vec![4, 11, 8, 6, 3];
+      let should_path_2: Vec<u8> = vec![4, 12, 8, 6, 3];
+
+      graph.end = Some(3);
+      graph.find_shortest_path();
+
+      match graph.path
+      {
+        Some(ref path) =>
+        {
+          path
+          .iter()
+          .zip(should_path_1.iter())
+          .zip(should_path_2.iter())
+          .for_each(|((path_id, should_id_1), should_id_2)|
+          {
+            assert!(*path_id == *should_id_1 || *path_id == *should_id_2);
+          });
+        }
+        None => panic!("A path should have been found")
+      }
+    }
   }
 
   #[test]

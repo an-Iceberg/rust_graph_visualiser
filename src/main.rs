@@ -200,7 +200,8 @@ async fn main()
 
       // TODO: Add user instructions
 
-      // TODO: Add sample graphs
+      // TODO: Add small graph
+      // TODO: Add medium graph
 
       // TODO: Adjustments for point radius, arrowhead etc.
       // TODO: FPS
@@ -215,6 +216,11 @@ async fn main()
     if is_key_pressed(KeyCode::S)
     {
       graph.insert_small_graph();
+    }
+    // ! dbg
+    if is_key_pressed(KeyCode::M)
+    {
+      graph.insert_medium_graph();
     }
 
     graph.paint_graph();
