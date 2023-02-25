@@ -8,6 +8,8 @@ use graph::*;
 use macroquad::{prelude::*, ui::root_ui, hash};
 use crate::config::window_config;
 
+// TODO: consider using IVec2 instead of Vec2
+// TODO: create a 'dev' branch
 #[macroquad::main(window_config)]
 async fn main()
 {

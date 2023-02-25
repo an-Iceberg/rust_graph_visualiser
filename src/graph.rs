@@ -67,17 +67,7 @@ impl Graph
   pub fn new() -> Graph
   {
     return Graph {
-      start: None,
-      end: None,
-      hovered_point_id: None,
-      selected_point_id: None,
-      has_hovered_point_been_checked: false,
-      max_amount_of_points: 100,
-      radius: 13,
-      padding: 3,
-      points: BTreeMap::<u8, Vec2>::new(),
-      lines: HashMap::<Line, u16>::new(),
-      path: None
+      ..Graph::default()
     };
   }
 
@@ -208,9 +198,12 @@ impl Graph
     }
 
     // TODO: implement Dijkstra's shortest path algorithm
+    self.path = None;
 
-    todo!();
+    //todo!();
   }
+
+  // TODO: somehow paint the path
 
   pub fn paint_points(&mut self)
   {
@@ -557,8 +550,7 @@ mod tests
   use macroquad::prelude::Vec2;
   use rand::*;
   use crate::graph::Line;
-
-use super::Graph;
+  use super::Graph;
 
   fn vec2_random_coordinates(radius: f32) -> Vec2
   {
@@ -580,7 +572,7 @@ use super::Graph;
   }
 
   #[test]
-  fn add_some_points_test()
+  fn add_some_points()
   {
     // Creating a graph
     let mut is_graph = Graph::new();
@@ -604,7 +596,7 @@ use super::Graph;
   }
 
   #[test]
-  fn add_many_points_test()
+  fn add_many_points()
   {
     // Creating the graph
     let mut is_graph = Graph::new();
@@ -628,7 +620,7 @@ use super::Graph;
   }
 
   #[test]
-  fn max_amount_of_points_test()
+  fn max_amount_of_points()
   {
     // Creating graph and "adding" 1_000 points to it
     let mut is_graph = Graph::new();
@@ -642,7 +634,7 @@ use super::Graph;
   }
 
   #[test]
-  fn remove_points_test()
+  fn remove_points()
   {
     // Creating a graph
     let mut is_graph = graph(10);
@@ -931,24 +923,117 @@ use super::Graph;
   }
 
   #[test]
-  #[ignore = "not yet implemented"]
   fn start_and_end_are_within_graph()
   {
-    // TODO
-    todo!();
+    let mut graph = Graph {
+      points: BTreeMap::<u8, Vec2>::from([
+        (1, Vec2 { x: 970.0, y: 108.0 }),
+        (2, Vec2 { x: 991.0, y: 340.0 }),
+        (3, Vec2 { x: 1023.0, y: 580.0 }),
+        (4, Vec2 { x: 509.0, y: 459.0 }),
+        (5, Vec2 { x: 750.0, y: 537.0 }),
+        (6, Vec2 { x: 747.0, y: 262.0 }),
+        (7, Vec2 { x: 535.0, y: 237.0 }),
+        (8, Vec2 { x: 497.0, y: 433.0 }),
+        (9, Vec2 { x: 352.0, y: 379.0 }),
+        (10, Vec2 { x: 308.0, y: 266.0 }),
+        (16, Vec2 { x: 163.0, y: 205.0 }),
+        (17, Vec2 { x: 149.0, y: 346.0 }),
+        (18, Vec2 { x: 620.0, y: 550.0 }),
+      ]),
+      lines: HashMap::<Line, u16>::from([
+        (Line { from: 5, to: 4 }, 2),
+        (Line { from: 18, to: 5 }, 7),
+        (Line { from: 6, to: 1 }, 6),
+        (Line { from: 8, to: 18 }, 6),
+        (Line { from: 9, to: 8 }, 8),
+        (Line { from: 4, to: 2 }, 5),
+        (Line { from: 6, to: 4 }, 9),
+        (Line { from: 4, to: 3 }, 4),
+        (Line { from: 17, to: 10 }, 8),
+        (Line { from: 10, to: 7 }, 12),
+        (Line { from: 16, to: 10 }, 7),
+        (Line { from: 8, to: 6 }, 4),
+        (Line { from: 10, to: 9 }, 11),
+        (Line { from: 17, to: 9 }, 4),
+        (Line { from: 7, to: 6 }, 5),
+      ]),
+      start: Some(10),
+      end: Some(4),
+      ..Graph::default()
+    };
+
+    let should_path = vec![10, 7, 6, 4];
+
+    graph.find_shortest_path();
+
+    match graph.path
+    {
+      Some(path) =>
+      {
+        path
+        .iter()
+        .zip(should_path.iter())
+        .for_each(|(path_id, should_id)|
+        {
+          assert_eq!(*path_id, *should_id);
+        });
+      }
+      None => panic!("A path should have been found")
+    }
   }
 
   #[test]
-  #[ignore = "not yet implemented"]
   fn no_possible_path()
   {
-    // TODO
-    todo!();
+    let mut graph = Graph::new();
+    graph.insert_small_graph();
+    graph.start = Some(1);
+    graph.end = Some(3);
+
+    graph.find_shortest_path();
+
+    assert!(graph.path.is_none());
+  }
+
+  #[test]
+  fn disconnected_graph()
+  {
+    let mut graph = Graph {
+      points: BTreeMap::<u8, Vec2>::from([
+        (1, Vec2 { x: 888.0, y: 135.0 }),
+        (2, Vec2 { x: 595.0, y: 138.0 }),
+        (3, Vec2 { x: 267.0, y: 120.0 }),
+        (4, Vec2 { x: 230.0, y: 347.0 }),
+        (5, Vec2 { x: 553.0, y: 379.0 }),
+        (6, Vec2 { x: 905.0, y: 390.0 }),
+        (7, Vec2 { x: 895.0, y: 649.0 }),
+        (8, Vec2 { x: 479.0, y: 634.0 }),
+        (8, Vec2 { x: 187.0, y: 607.0 }),
+      ]),
+      lines: HashMap::<Line, u16>::from([
+        (Line { from: 9, to: 8 }, 20),
+        (Line { from: 3, to: 2 }, 20),
+        (Line { from: 1, to: 6 }, 20),
+        (Line { from: 6, to: 7 }, 20),
+        (Line { from: 3, to: 4 }, 20),
+        (Line { from: 8, to: 7 }, 20),
+        (Line { from: 3, to: 5 }, 20),
+      ]),
+      start: Some(3),
+      end: Some(1),
+      ..Graph::default()
+    };
+    graph.start = Some(3);
+    graph.end = Some(7);
+    graph.find_shortest_path();
+
+    assert!(graph.path.is_none());
   }
 
   #[test]
   #[ignore = "not yet implemented"]
-  fn disconnected_graph()
+  fn cyclical_valid_path()
   {
     // TODO
     todo!();
