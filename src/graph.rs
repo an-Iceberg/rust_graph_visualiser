@@ -198,9 +198,8 @@ impl Graph
     }
 
     // TODO: implement Dijkstra's shortest path algorithm
-    self.path = None;
 
-    //todo!();
+    todo!();
   }
 
   // TODO: somehow paint the path
@@ -1032,12 +1031,59 @@ mod tests
   }
 
   #[test]
-  #[ignore = "not yet implemented"]
   fn cyclical_valid_path()
   {
-    // TODO
-    todo!();
-  }
+    let mut graph = Graph {
+      points: BTreeMap::<u8, Vec2>::from([
+        (1, Vec2 { x: 899.0, y: 490.0 }),
+        (2, Vec2 { x: 941.0, y: 618.0 }),
+        (3, Vec2 { x: 710.0, y: 621.0 }),
+        (4, Vec2 { x: 777.0, y: 390.0 }),
+        (5, Vec2 { x: 698.0, y: 200.0 }),
+        (6, Vec2 { x: 497.0, y: 185.0 }),
+        (7, Vec2 { x: 379.0, y: 367.0 }),
+        (8, Vec2 { x: 556.0, y: 541.0 }),
+        (9, Vec2 { x: 403.0, y: 574.0 }),
+        (10, Vec2 { x: 207.0, y: 434.0 }),
+        (11, Vec2 { x: 238.0, y: 257.0 }),
+        (12, Vec2 { x: 554.0, y: 41.0 }),
+      ]),
+      lines: HashMap::<Line, u16>::from([
+        (Line { from: 7, to: 11 }, 1),
+        (Line { from: 6, to: 12 }, 1),
+        (Line { from: 7, to: 6 }, 1),
+        (Line { from: 5, to: 4 }, 1),
+        (Line { from: 6, to: 5 }, 1),
+        (Line { from: 8, to: 7 }, 1),
+        (Line { from: 4, to: 8 }, 1),
+        (Line { from: 4, to: 1 }, 1),
+        (Line { from: 8, to: 3 }, 1),
+        (Line { from: 7, to: 10 }, 1),
+        (Line { from: 1, to: 2 }, 1),
+        (Line { from: 8, to: 9 }, 1),
+      ]),
+      start: Some(4),
+      end: Some(5),
+      ..Graph::default()
+    };
 
-  // TODO: add test cases for cyclical graphs (it should work for dijkstra coz each node is marked as visited)
+    let should_path = vec![4, 8, 7, 6, 5];
+
+    graph.find_shortest_path();
+
+    match graph.path
+    {
+      Some(path) =>
+      {
+        path
+        .iter()
+        .zip(should_path.iter())
+        .for_each(|(path_id, should_id)|
+        {
+          assert_eq!(*path_id, *should_id);
+        });
+      }
+      None => panic!("A path should have been found")
+    }
+  }
 }
