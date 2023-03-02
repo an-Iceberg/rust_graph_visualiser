@@ -202,8 +202,9 @@ async fn main()
 
       // TODO: Add user instructions
 
-      // TODO: Add small graph
-      // TODO: Add medium graph
+      // TODO: Add small graph button
+      // TODO: Add medium graph button
+      // TODO: Add large graph button
 
       // TODO: Adjustments for point radius, arrowhead etc.
       // TODO: FPS
