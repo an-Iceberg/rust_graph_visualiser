@@ -224,6 +224,11 @@ async fn main()
     {
       graph.insert_medium_graph();
     }
+    // ! dbg
+    if is_key_pressed(KeyCode::L)
+    {
+      graph.insert_large_graph();
+    }
 
     graph.paint_graph();
 

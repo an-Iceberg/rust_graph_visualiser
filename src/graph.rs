@@ -360,6 +360,7 @@ impl Graph
   {
     let text_center = get_text_center(text, None, 20, 1.0, 0.0);
 
+    // TODO: draw pill of contrasting colour around the text
     draw_text(text, position.x - text_center.x, position.y - text_center.y - 23.0, 20.0, GREEN);
   }
 
@@ -508,7 +509,62 @@ impl Graph
   {
     self.clear();
 
-    todo!();
+    self.points = BTreeMap::<u8, Vec2>::from([
+      (1, Vec2 { x: 595.0, y: 640.0 }),
+      (2, Vec2 { x: 864.0, y: 300.0 }),
+      (3, Vec2 { x: 550.0, y: 369.0 }),
+      (4, Vec2 { x: 280.0, y: 606.0 }),
+      (5, Vec2 { x: 748.0, y: 127.0 }),
+      (6, Vec2 { x: 177.0, y: 71.0 }),
+      (7, Vec2 { x: 467.0, y: 84.0 }),
+      (8, Vec2 { x: 260.0, y: 431.0 }),
+      (9, Vec2 { x: 928.0, y: 642.0 }),
+      (10, Vec2 { x: 466.0, y: 181.0 }),
+      (11, Vec2 { x: 433.0, y: 27.0 }),
+      (12, Vec2 { x: 667.0, y: 52.0 }),
+      (13, Vec2 { x: 847.0, y: 75.0 }),
+      (14, Vec2 { x: 734.0, y: 270.0 }),
+      (15, Vec2 { x: 931.0, y: 233.0 }),
+      (16, Vec2 { x: 904.0, y: 389.0 }),
+      (17, Vec2 { x: 423.0, y: 467.0 }),
+      (18, Vec2 { x: 445.0, y: 551.0 }),
+      (19, Vec2 { x: 691.0, y: 559.0 }),
+    ]);
+
+    self.lines = HashMap::<Line, u16>::from([
+      (Line { from: 12, to: 13 }, 1),
+      (Line { from: 6, to: 8 }, 12),
+      (Line { from: 14, to: 3 }, 1),
+      (Line { from: 16, to: 9 }, 10),
+      (Line { from: 15, to: 9 }, 14),
+      (Line { from: 2, to: 19 }, 9),
+      (Line { from: 18, to: 19 }, 3),
+      (Line { from: 17, to: 18 }, 2),
+      (Line { from: 8, to: 4 }, 1),
+      (Line { from: 1, to: 9 }, 1),
+      (Line { from: 7, to: 5 }, 1),
+      (Line { from: 16, to: 3 }, 2),
+      (Line { from: 3, to: 8 }, 1),
+      (Line { from: 3, to: 17 }, 3),
+      (Line { from: 15, to: 16 }, 1),
+      (Line { from: 5, to: 14 }, 3),
+      (Line { from: 10, to: 3 }, 8),
+      (Line { from: 13, to: 2 }, 2),
+      (Line { from: 12, to: 5 }, 2),
+      (Line { from: 11, to: 12 }, 1),
+      (Line { from: 6, to: 11 }, 2),
+      (Line { from: 10, to: 5 }, 3),
+      (Line { from: 5, to: 2 }, 1),
+      (Line { from: 16, to: 17 }, 5),
+      (Line { from: 6, to: 7 }, 1),
+      (Line { from: 18, to: 1 }, 1),
+      (Line { from: 6, to: 10 }, 2),
+      (Line { from: 2, to: 3 }, 1),
+      (Line { from: 19, to: 9 }, 4),
+      (Line { from: 17, to: 4 }, 2),
+      (Line { from: 13, to: 15 }, 1),
+      (Line { from: 4, to: 1 }, 1),
+    ]);
   }
 }
 
@@ -914,11 +970,87 @@ mod tests
   }
 
   #[test]
-  #[ignore = "not yet implemented"]
   fn shortest_path_large()
   {
-    // TODO
-    todo!();
+    let mut graph = Graph {
+      points: BTreeMap::<u8, Vec2>::from([
+        (1, Vec2 { x: 595.0, y: 640.0 }),
+        (2, Vec2 { x: 864.0, y: 300.0 }),
+        (3, Vec2 { x: 550.0, y: 369.0 }),
+        (4, Vec2 { x: 280.0, y: 606.0 }),
+        (5, Vec2 { x: 748.0, y: 127.0 }),
+        (6, Vec2 { x: 177.0, y: 71.0 }),
+        (7, Vec2 { x: 467.0, y: 84.0 }),
+        (8, Vec2 { x: 260.0, y: 431.0 }),
+        (9, Vec2 { x: 928.0, y: 642.0 }),
+        (10, Vec2 { x: 466.0, y: 181.0 }),
+        (11, Vec2 { x: 433.0, y: 27.0 }),
+        (12, Vec2 { x: 667.0, y: 52.0 }),
+        (13, Vec2 { x: 847.0, y: 75.0 }),
+        (14, Vec2 { x: 734.0, y: 270.0 }),
+        (15, Vec2 { x: 931.0, y: 233.0 }),
+        (16, Vec2 { x: 904.0, y: 389.0 }),
+        (17, Vec2 { x: 423.0, y: 467.0 }),
+        (18, Vec2 { x: 445.0, y: 551.0 }),
+        (19, Vec2 { x: 691.0, y: 559.0 }),
+      ]),
+      lines: HashMap::<Line, u16>::from([
+        (Line { from: 12, to: 13 }, 1),
+        (Line { from: 6, to: 8 }, 12),
+        (Line { from: 14, to: 3 }, 1),
+        (Line { from: 16, to: 9 }, 10),
+        (Line { from: 15, to: 9 }, 14),
+        (Line { from: 2, to: 19 }, 9),
+        (Line { from: 18, to: 19 }, 3),
+        (Line { from: 17, to: 18 }, 2),
+        (Line { from: 8, to: 4 }, 1),
+        (Line { from: 1, to: 9 }, 1),
+        (Line { from: 7, to: 5 }, 1),
+        (Line { from: 16, to: 3 }, 2),
+        (Line { from: 3, to: 8 }, 1),
+        (Line { from: 3, to: 17 }, 3),
+        (Line { from: 15, to: 16 }, 1),
+        (Line { from: 5, to: 14 }, 3),
+        (Line { from: 10, to: 3 }, 8),
+        (Line { from: 13, to: 2 }, 2),
+        (Line { from: 12, to: 5 }, 2),
+        (Line { from: 11, to: 12 }, 1),
+        (Line { from: 6, to: 11 }, 2),
+        (Line { from: 10, to: 5 }, 3),
+        (Line { from: 5, to: 2 }, 1),
+        (Line { from: 16, to: 17 }, 5),
+        (Line { from: 6, to: 7 }, 1),
+        (Line { from: 18, to: 1 }, 1),
+        (Line { from: 6, to: 10 }, 2),
+        (Line { from: 2, to: 3 }, 1),
+        (Line { from: 19, to: 9 }, 4),
+        (Line { from: 17, to: 4 }, 2),
+        (Line { from: 13, to: 15 }, 1),
+        (Line { from: 4, to: 1 }, 1),
+      ]),
+      start: Some(6),
+      end: Some(9),
+      ..Graph::default()
+    };
+
+    let should_path = vec![6, 7, 5, 2, 3, 8, 4, 1, 9];
+
+    graph.find_shortest_path();
+
+    match graph.path
+    {
+      Some(path) =>
+      {
+        path
+        .iter()
+        .zip(should_path.iter())
+        .for_each(|(path_id, should_id)|
+        {
+          assert_eq!(*path_id, *should_id);
+        });
+      }
+      None => panic!("A path should have been found")
+    }
   }
 
   #[test]
