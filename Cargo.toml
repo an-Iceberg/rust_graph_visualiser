@@ -1,12 +1,13 @@
 [package]
 name = "rust_graph_visualiser"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macroquad ={ version = "0.3.25"}
+itertools = "0.11.0"
+macroquad = { version = "0.3.25" }
 
 [dev-dependencies]
-rand ={ version = "0.8.5"}
+rand = { version = "0.8.5" }
