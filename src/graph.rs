@@ -2,7 +2,7 @@ use crate::{draw_pill, utils};
 use itertools::Itertools;
 use macroquad::{
   prelude::{mouse_position, Color, IVec2, BLACK, GREEN, MAGENTA, ORANGE, YELLOW},
-  shapes::{draw_circle, draw_circle_lines, draw_line, draw_rectangle, draw_triangle},
+  shapes::{draw_circle, draw_circle_lines, draw_line, draw_triangle},
   text::{draw_text, get_text_center, measure_text},
 };
 use std::{
@@ -13,7 +13,7 @@ use std::{
 
 /// ### Graph
 ///
-/// It contains a lot
+/// It contains nodes and edges connecting those nodes.
 pub(crate) struct Graph {
   pub(crate) start: Option<u8>,
   pub(crate) end: Option<u8>,
@@ -34,13 +34,13 @@ pub(crate) struct Graph {
   /// Key: point id
   ///
   /// Value: point position
-  points: BTreeMap<u8, IVec2>,
+  points: BTreeMap<u8, Node>,
 
   /// Contains all data for the lines
   ///
   /// Key: Line (2 ids)
   ///
-  ///  Value: line length
+  /// Value: line length
   lines: HashMap<Line, u16>,
 
   /// The path is a vector of all the point ids that the graph traverses
@@ -60,7 +60,7 @@ impl Default for Graph {
       max_amount_of_points: 100,
       radius: 13,
       padding: 3,
-      points: BTreeMap::<u8, IVec2>::new(),
+      points: BTreeMap::<u8, Node>::new(),
       lines: HashMap::<Line, u16>::new(),
       path: None,
     };
@@ -100,10 +100,9 @@ impl Graph {
 
     self
       .points
-      .insert(smallest_missing_id, coordinates);
+      .insert(smallest_missing_id, Node::new(coordinates, smallest_missing_id));
 
-    self.start = None;
-    self.end = None;
+    self.clear_path();
   }
 
   pub fn remove_point(&mut self, id: u8) {
@@ -118,19 +117,15 @@ impl Graph {
       .points
       .remove(&id);
 
-    self.start = None;
-    self.end = None;
+    self.clear_path();
   }
 
   pub fn set_point_coordinates(&mut self, point_id: u8, new_position: IVec2) {
-    match self
+    if let Some(node) = self
       .points
       .get_mut(&point_id)
     {
-      Some(coordinates) => {
-        *coordinates = new_position;
-      },
-      None => (),
+      node.position = new_position;
     }
   }
 
@@ -153,8 +148,7 @@ impl Graph {
       },
     }
 
-    self.start = None;
-    self.end = None;
+    self.clear_path();
   }
 
   pub fn remove_line(&mut self, from_id: u8, to_id: u8) {
@@ -167,22 +161,25 @@ impl Graph {
       .lines
       .remove(&line);
 
-    self.start = None;
-    self.end = None;
+    self.clear_path();
   }
 
   pub fn find_hovered_point(&mut self) -> Option<u8> {
     self.has_hovered_point_been_checked = true;
 
-    for (id, coordinates) in self
+    for (id, node) in self
       .points
       .iter()
     {
       if utils::is_point_in_circle(
         mouse_position().0,
         mouse_position().1,
-        coordinates.x as f32,
-        coordinates.y as f32,
+        node
+          .position
+          .x as f32,
+        node
+          .position
+          .y as f32,
         self.radius as f32,
       ) {
         self.hovered_point_id = Some(*id);
@@ -206,7 +203,22 @@ impl Graph {
     return self.radius;
   }
 
+  /// Every time the graph gets changed, the path gets cleared b/c the graph might have been changed
+  /// in a way that would change the shortest path from `start` to `end`
+  pub fn clear_path(&mut self) {
+    self.path = None;
+    self
+      .points
+      .iter_mut()
+      .for_each(|(id, node)| {
+        node.parent = *id;
+        node.visited = false;
+        node.distance = u32::MAX;
+      });
+  }
+
   pub fn clear(&mut self) {
+    self.clear_path();
     self
       .lines
       .clear();
@@ -222,21 +234,133 @@ impl Graph {
 
   /// Finds the shortest path from the start to the end point using dijkstra's shortest path algorithm
   pub fn find_shortest_path(&mut self) {
-    if self
-      .start
-      .is_none()
-      || self
-        .end
-        .is_none()
-    {
-      return;
+    let Some(start) = self.start else { return; };
+    let Some(end) = self.end else { return; };
+
+    // TODO: don't use unwrap()
+    // Inserting the start node so the list won't be empty
+    let mut untested_nodes = Vec::<u8>::new();
+    untested_nodes.push(start);
+    self
+      .points
+      .get_mut(&start)
+      .unwrap()
+      .distance = 0;
+
+    // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
+
+    // TOFIX: large graph doesn't give shortest path from 6 to 18
+    while !untested_nodes.is_empty() {
+      // Remove all visited nodes
+      untested_nodes.retain(|id| {
+        return match self
+          .points
+          .get(id)
+        {
+          Some(node) => !node.visited,
+          None => false,
+        };
+      });
+
+      if untested_nodes.is_empty() {
+        break;
+      }
+
+      let current_node_id = untested_nodes
+        .first()
+        .unwrap();
+      let current_node_copy = self
+        .points
+        .get_mut(current_node_id)
+        .unwrap()
+        .clone();
+
+      // Set the current node to visited
+      self
+        .points
+        .get_mut(current_node_id)
+        .unwrap()
+        .visited = true;
+
+      let mut new_untested_nodes = Vec::<u8>::new();
+
+      // Test the neighbours of the current node
+      for (line, line_length) in self
+        .lines
+        .iter()
+      {
+        // Only process the neighbours of the current node
+        if line.from != *current_node_id {
+          continue;
+        }
+
+        let neighbour = self
+          .points
+          .get_mut(&line.to)
+          .unwrap();
+
+        new_untested_nodes.push(line.to);
+
+        if current_node_copy.distance + (*line_length as u32) < neighbour.distance {
+          neighbour.parent = *current_node_id;
+          neighbour.distance = current_node_copy.distance + (*line_length as u32);
+        }
+      }
+
+      // Add all found untested neighbours to the untested nodes
+      untested_nodes.append(&mut new_untested_nodes);
     }
 
-    // TODO: implement Dijkstra's shortest path algorithm
+    // --- Dijkstra's algorithm is over ---
 
-    todo!();
+    // Extracting the path data from the graph
+
+    self.path = Some(Vec::<u8>::new());
+
+    let path = self
+      .path
+      .as_mut()
+      .unwrap();
+
+    let mut current_node = end;
+
+    for _ in 0..self
+      .points
+      .len()
+    {
+      let Some(next_node) = self
+        .points
+        .get(&current_node) else { return; };
+      let next_node = next_node.parent;
+
+      if next_node == current_node {
+        self.path = None;
+        return;
+      }
+
+      // Push the current node onto the path and go to the next node
+      path.push(current_node);
+
+      current_node = next_node;
+
+      // Pushing the start onto the path and exiting the loop
+      if current_node == start {
+        path.push(start);
+        break;
+      }
+    }
+
+    path.reverse();
   }
 
+  // !dbg
+  pub fn print_path(&self) {
+    if let Some(path) = &self.path {
+      println!("{:?}", path);
+    }
+  }
+
+  // TODO: print arrowhead over the path
   // TODO: use functional pattern if possible
   pub fn paint_path(&self) {
     if let Some(path) = &self.path {
@@ -247,20 +371,39 @@ impl Graph {
         let Some(from_point) = self.points.get(from) else { continue; };
         let Some(to_point) = self.points.get(to) else { continue; };
 
-        draw_line(from_point.x as f32, from_point.y as f32, to_point.x as f32, to_point.y as f32, 1.0, GREEN);
+        draw_line(
+          from_point
+            .position
+            .x as f32,
+          from_point
+            .position
+            .y as f32,
+          to_point
+            .position
+            .x as f32,
+          to_point
+            .position
+            .y as f32,
+          2.0,
+          GREEN,
+        );
       }
     }
   }
 
   pub fn paint_points(&mut self) {
     // Painting all points and centering the text
-    for (id, coordinates) in self
+    for (id, node) in self
       .points
       .iter()
     {
       draw_circle(
-        coordinates.x as f32,
-        coordinates.y as f32,
+        node
+          .position
+          .x as f32,
+        node
+          .position
+          .y as f32,
         self.radius as f32,
         if self.selected_point_id == Some(*id) { YELLOW } else { ORANGE },
       );
@@ -277,8 +420,14 @@ impl Graph {
       draw_text(
         id.to_string()
           .as_str(),
-        coordinates.x as f32 - text_center.x,
-        coordinates.y as f32 - text_center.y,
+        node
+          .position
+          .x as f32
+          - text_center.x,
+        node
+          .position
+          .y as f32
+          - text_center.y,
         20.0,
         BLACK,
       );
@@ -292,11 +441,21 @@ impl Graph {
     // TODO: consider replacing this with Option::inspect
     // Painting an outline for the hovered point (if it exists)
     if let Some(hovered_point_id) = self.hovered_point_id {
-      if let Some(coordinates) = self
+      if let Some(node) = self
         .points
         .get(&hovered_point_id)
       {
-        draw_circle_lines(coordinates.x as f32, coordinates.y as f32, (self.radius + 4) as f32, 1 as f32, MAGENTA);
+        draw_circle_lines(
+          node
+            .position
+            .x as f32,
+          node
+            .position
+            .y as f32,
+          (self.radius + 4) as f32,
+          1 as f32,
+          MAGENTA,
+        );
       }
     }
 
@@ -320,18 +479,32 @@ impl Graph {
       ) {
         (Some(from_point), Some(to_point)) => {
           let direction = IVec2 {
-            x: from_point.x - to_point.x,
-            y: from_point.y - to_point.y,
+            x: from_point
+              .position
+              .x
+              - to_point
+                .position
+                .x,
+            y: from_point
+              .position
+              .y
+              - to_point
+                .position
+                .y,
           };
 
           let arrow_head_location = IVec2 {
-            x: to_point.x
+            x: to_point
+              .position
+              .x
               + (direction.x as f32
                 * ((self.radius + 2) as f32
                   / direction
                     .as_vec2()
                     .length())) as i32,
-            y: to_point.y
+            y: to_point
+              .position
+              .y
               + (direction.y as f32
                 * ((self.radius + 2) as f32
                   / direction
@@ -341,13 +514,17 @@ impl Graph {
 
           // This point is at the base of the arrow head that "connects" it to the line
           let helper_point = IVec2 {
-            x: to_point.x
+            x: to_point
+              .position
+              .x
               + (direction.x as f32
                 * ((self.radius + 15) as f32
                   / direction
                     .as_vec2()
                     .length())) as i32,
-            y: to_point.y
+            y: to_point
+              .position
+              .y
               + (direction.y as f32
                 * ((self.radius + 15) as f32
                   / direction
@@ -361,13 +538,17 @@ impl Graph {
 
           // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
           draw_line(
-            from_point.x as f32
+            from_point
+              .position
+              .x as f32
               + (direction.x as f32
                 * (-(self.radius as f32)
                   / direction
                     .as_vec2()
                     .length())),
-            from_point.y as f32
+            from_point
+              .position
+              .y as f32
               + (direction.y as f32
                 * (-(self.radius as f32)
                   / direction
@@ -403,15 +584,39 @@ impl Graph {
                   / direction
                     .as_vec2()
                     .length())
-                  * (((from_point.x - to_point.x) as f32 * angle.cos())
-                    - ((from_point.y - to_point.y) as f32 * angle.sin()))) as i32,
+                  * (((from_point
+                    .position
+                    .x
+                    - to_point
+                      .position
+                      .x) as f32
+                    * angle.cos())
+                    - ((from_point
+                      .position
+                      .y
+                      - to_point
+                        .position
+                        .y) as f32
+                      * angle.sin()))) as i32,
               y: arrow_head_location.y
                 + ((arrow_head_length
                   / direction
                     .as_vec2()
                     .length())
-                  * (((from_point.y - to_point.y) as f32 * angle.cos())
-                    + ((from_point.x - to_point.x) as f32 * angle.sin()))) as i32,
+                  * (((from_point
+                    .position
+                    .y
+                    - to_point
+                      .position
+                      .y) as f32
+                    * angle.cos())
+                    + ((from_point
+                      .position
+                      .x
+                      - to_point
+                        .position
+                        .x) as f32
+                      * angle.sin()))) as i32,
             }
             .as_vec2(),
             Color::from_rgba(0, 255, 255, 255),
@@ -427,15 +632,39 @@ impl Graph {
                   / direction
                     .as_vec2()
                     .length())
-                  * (((from_point.x - to_point.x) as f32 * angle.cos())
-                    + ((from_point.y - to_point.y) as f32 * angle.sin()))) as i32,
+                  * (((from_point
+                    .position
+                    .x
+                    - to_point
+                      .position
+                      .x) as f32
+                    * angle.cos())
+                    + ((from_point
+                      .position
+                      .y
+                      - to_point
+                        .position
+                        .y) as f32
+                      * angle.sin()))) as i32,
               y: arrow_head_location.y
                 + ((arrow_head_length
                   / direction
                     .as_vec2()
                     .length())
-                  * (((from_point.y - to_point.y) as f32 * angle.cos())
-                    - ((from_point.x - to_point.x) as f32 * angle.sin()))) as i32,
+                  * (((from_point
+                    .position
+                    .y
+                    - to_point
+                      .position
+                      .y) as f32
+                    * angle.cos())
+                    - ((from_point
+                      .position
+                      .x
+                      - to_point
+                        .position
+                        .x) as f32
+                      * angle.sin()))) as i32,
             }
             .as_vec2(),
             Color::from_rgba(0, 255, 255, 255),
@@ -462,8 +691,22 @@ impl Graph {
       ) {
         (Some(from_point), Some(to_point)) => {
           let position = IVec2 {
-            x: ((1.0 / 3.0) * from_point.x as f32 + (2.0 / 3.0) * to_point.x as f32) as i32,
-            y: ((1.0 / 3.0) * from_point.y as f32 + (2.0 / 3.0) * to_point.y as f32) as i32,
+            x: ((1.0 / 3.0)
+              * from_point
+                .position
+                .x as f32
+              + (2.0 / 3.0)
+                * to_point
+                  .position
+                  .x as f32) as i32,
+            y: ((1.0 / 3.0)
+              * from_point
+                .position
+                .y as f32
+              + (2.0 / 3.0)
+                * to_point
+                  .position
+                  .y as f32) as i32,
           };
 
           let text_center = get_text_center(
@@ -583,22 +826,22 @@ impl Graph {
     // TODO: consider replacing this with Option::inspect
     // Paints start label
     if let Some(start_id) = self.start {
-      if let Some(start_point_position) = self
+      if let Some(start_point) = self
         .points
         .get(&start_id)
       {
-        self.paint_label("Start", start_point_position);
+        self.paint_label("Start", &start_point.position);
       }
     }
 
     // TODO: consider replacing this with Option::inspect
     // Paints end label
     if let Some(end_id) = self.end {
-      if let Some(end_point_position) = self
+      if let Some(end_point) = self
         .points
         .get(&end_id)
       {
-        self.paint_label("End", end_point_position);
+        self.paint_label("End", &end_point.position);
       }
     }
   }
@@ -609,7 +852,7 @@ impl Graph {
       .points
       .iter()
       .for_each(|point| {
-        println!("{}: {}", point.0, point.1);
+        println!("{}: {:?}", point.0, point.1);
       });
 
     println!("Lines:");
@@ -636,14 +879,14 @@ impl Graph {
     self.clear();
 
     self.points = BTreeMap::from([
-      (1, IVec2 { x: 942, y: 355 }),
-      (2, IVec2 { x: 720, y: 208 }),
-      (3, IVec2 { x: 198, y: 342 }),
-      (4, IVec2 { x: 463, y: 507 }),
-      (5, IVec2 { x: 735, y: 513 }),
-      (6, IVec2 { x: 458, y: 346 }),
-      (7, IVec2 { x: 468, y: 202 }),
-      (8, IVec2 { x: 721, y: 360 }),
+      (1, Node::new(IVec2 { x: 942, y: 355 }, 1)),
+      (2, Node::new(IVec2 { x: 720, y: 208 }, 2)),
+      (3, Node::new(IVec2 { x: 198, y: 342 }, 3)),
+      (4, Node::new(IVec2 { x: 463, y: 507 }, 4)),
+      (5, Node::new(IVec2 { x: 735, y: 513 }, 5)),
+      (6, Node::new(IVec2 { x: 458, y: 346 }, 6)),
+      (7, Node::new(IVec2 { x: 468, y: 202 }, 7)),
+      (8, Node::new(IVec2 { x: 721, y: 360 }, 8)),
     ]);
 
     self.lines = HashMap::<Line, u16>::from([
@@ -667,19 +910,19 @@ impl Graph {
   pub fn insert_medium_graph(&mut self) {
     self.clear();
 
-    self.points = BTreeMap::<u8, IVec2>::from([
-      (1, IVec2 { x: 959, y: 211 }),
-      (2, IVec2 { x: 967, y: 394 }),
-      (3, IVec2 { x: 946, y: 532 }),
-      (4, IVec2 { x: 144, y: 377 }),
-      (5, IVec2 { x: 775, y: 295 }),
-      (6, IVec2 { x: 734, y: 523 }),
-      (7, IVec2 { x: 559, y: 493 }),
-      (8, IVec2 { x: 570, y: 361 }),
-      (9, IVec2 { x: 569, y: 200 }),
-      (10, IVec2 { x: 353, y: 206 }),
-      (11, IVec2 { x: 355, y: 350 }),
-      (12, IVec2 { x: 342, y: 488 }),
+    self.points = BTreeMap::<u8, Node>::from([
+      (1, Node::new(IVec2 { x: 959, y: 211 }, 1)),
+      (2, Node::new(IVec2 { x: 967, y: 394 }, 2)),
+      (3, Node::new(IVec2 { x: 946, y: 532 }, 3)),
+      (4, Node::new(IVec2 { x: 144, y: 377 }, 4)),
+      (5, Node::new(IVec2 { x: 775, y: 295 }, 5)),
+      (6, Node::new(IVec2 { x: 734, y: 523 }, 6)),
+      (7, Node::new(IVec2 { x: 559, y: 493 }, 7)),
+      (8, Node::new(IVec2 { x: 570, y: 361 }, 8)),
+      (9, Node::new(IVec2 { x: 569, y: 200 }, 9)),
+      (10, Node::new(IVec2 { x: 353, y: 206 }, 10)),
+      (11, Node::new(IVec2 { x: 355, y: 350 }, 11)),
+      (12, Node::new(IVec2 { x: 342, y: 488 }, 12)),
     ]);
 
     self.lines = HashMap::<Line, u16>::from([
@@ -706,26 +949,26 @@ impl Graph {
   pub fn insert_large_graph(&mut self) {
     self.clear();
 
-    self.points = BTreeMap::<u8, IVec2>::from([
-      (1, IVec2 { x: 595, y: 640 }),
-      (2, IVec2 { x: 864, y: 300 }),
-      (3, IVec2 { x: 550, y: 369 }),
-      (4, IVec2 { x: 280, y: 606 }),
-      (5, IVec2 { x: 748, y: 127 }),
-      (6, IVec2 { x: 177, y: 71 }),
-      (7, IVec2 { x: 467, y: 84 }),
-      (8, IVec2 { x: 260, y: 431 }),
-      (9, IVec2 { x: 928, y: 642 }),
-      (10, IVec2 { x: 466, y: 181 }),
-      (11, IVec2 { x: 433, y: 27 }),
-      (12, IVec2 { x: 667, y: 52 }),
-      (13, IVec2 { x: 847, y: 75 }),
-      (14, IVec2 { x: 734, y: 270 }),
-      (15, IVec2 { x: 931, y: 233 }),
-      (16, IVec2 { x: 904, y: 389 }),
-      (17, IVec2 { x: 423, y: 467 }),
-      (18, IVec2 { x: 445, y: 551 }),
-      (19, IVec2 { x: 691, y: 559 }),
+    self.points = BTreeMap::<u8, Node>::from([
+      (1, Node::new(IVec2 { x: 595, y: 640 }, 1)),
+      (2, Node::new(IVec2 { x: 864, y: 300 }, 2)),
+      (3, Node::new(IVec2 { x: 550, y: 369 }, 3)),
+      (4, Node::new(IVec2 { x: 280, y: 606 }, 4)),
+      (5, Node::new(IVec2 { x: 748, y: 127 }, 5)),
+      (6, Node::new(IVec2 { x: 177, y: 71 }, 6)),
+      (7, Node::new(IVec2 { x: 467, y: 84 }, 7)),
+      (8, Node::new(IVec2 { x: 260, y: 431 }, 8)),
+      (9, Node::new(IVec2 { x: 928, y: 642 }, 9)),
+      (10, Node::new(IVec2 { x: 466, y: 181 }, 10)),
+      (11, Node::new(IVec2 { x: 433, y: 27 }, 11)),
+      (12, Node::new(IVec2 { x: 667, y: 52 }, 12)),
+      (13, Node::new(IVec2 { x: 847, y: 75 }, 13)),
+      (14, Node::new(IVec2 { x: 734, y: 270 }, 14)),
+      (15, Node::new(IVec2 { x: 931, y: 233 }, 15)),
+      (16, Node::new(IVec2 { x: 904, y: 389 }, 16)),
+      (17, Node::new(IVec2 { x: 423, y: 467 }, 17)),
+      (18, Node::new(IVec2 { x: 445, y: 551 }, 18)),
+      (19, Node::new(IVec2 { x: 691, y: 559 }, 19)),
     ]);
 
     self.lines = HashMap::<Line, u16>::from([
@@ -785,6 +1028,28 @@ impl Eq for Line {}
 impl Display for Line {
   fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     return write!(formatter, "({}, {})", self.from, self.to);
+  }
+}
+
+/// ### The Node struct
+///
+/// It contains additional fields needed for dijkstra's shortest path algorithm
+#[derive(Debug, Clone, Copy)]
+struct Node {
+  position: IVec2,
+  visited: bool,
+  parent: u8,
+  distance: u32,
+}
+
+impl Node {
+  pub fn new(position: IVec2, parent: u8) -> Self {
+    return Node {
+      position,
+      visited: false,
+      parent,
+      distance: u32::MAX,
+    };
   }
 }
 

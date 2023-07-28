@@ -1,5 +1,6 @@
 use super::*;
 
+// TODO: extract each assertion into its own test
 #[test]
 pub fn circle_tests() {
   assert!(is_point_in_circle(240.0, 78.0, 233.0, 73.0, 13.0));

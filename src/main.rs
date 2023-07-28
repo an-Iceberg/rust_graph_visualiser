@@ -92,7 +92,9 @@ async fn main() {
           // Path
           3 => {
             if graph.start != None && graph.end != None {
-              ui.button(None, "Find shortest path");
+              if ui.button(None, "Find shortest path") {
+                graph.find_shortest_path();
+              }
             }
 
             ui.label(None, "Left click: set start");
@@ -108,14 +110,17 @@ async fn main() {
         // TODO: Add medium graph button
         // TODO: Add large graph button
 
-        // TODO: Adjustments for point radius, arrowhead etc.
+        // TODO: Adjustments for point radius, arrowhead, path thickness/color
         // TODO: FPS
       },
     );
 
     // ! dbg
     if is_key_pressed(KeyCode::P) {
+      println!("Graph data:");
       graph.print_graph_data();
+      println!("Path data:");
+      graph.print_path();
     }
     // ! dbg
     if is_key_pressed(KeyCode::S) {
@@ -127,6 +132,7 @@ async fn main() {
     }
     // ! dbg
     if is_key_pressed(KeyCode::L) {
+      // FIX: path from 6 to 18 is wrong, there exist a much shorter one
       graph.insert_large_graph();
     }
 
@@ -213,21 +219,25 @@ fn handle_mouse_input(mode: usize, graph: &mut Graph, line_length: f32) {
     // Select a start point with left click
     (3, true, _, _, false, Some(hovered_point_id), None) => {
       graph.start = Some(hovered_point_id);
+      graph.clear_path();
     },
 
     // Unsetting the start point
     (3, true, _, _, false, None, None) => {
       graph.start = None;
+      graph.clear_path();
     },
 
     // Select an end point with right click
     (3, false, _, _, true, Some(hovered_point_id), None) => {
       graph.end = Some(hovered_point_id);
+      graph.clear_path();
     },
 
     // Unsetting the end point
     (3, false, _, _, true, None, None) => {
       graph.end = None;
+      graph.clear_path();
     },
 
     (_, _, _, _, _, _, _) => (),
@@ -266,4 +276,11 @@ pub fn draw_pill(x: f32, y: f32, width: f32, height: f32, color: Color) {
   draw_rectangle(x, y, width, height, color);
   draw_circle(x, y + height.div(2.0), height.div(2.0), color);
   draw_circle(x + width, y + height.div(2.0), height.div(2.0), color);
+}
+
+enum Mode {
+  Move,
+  Point,
+  Line,
+  Path,
 }
