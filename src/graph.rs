@@ -1,10 +1,11 @@
 use crate::{draw_pill, utils};
 use itertools::Itertools;
 use macroquad::{
-  prelude::{mouse_position, Color, IVec2, BLACK, GREEN, MAGENTA, ORANGE, YELLOW},
+  prelude::{mouse_position, Color, IVec2, BLACK, GREEN, MAGENTA, ORANGE, WHITE, YELLOW},
   shapes::{draw_circle, draw_circle_lines, draw_line, draw_triangle},
   text::{draw_text, get_text_center, measure_text},
 };
+use rand::Rng;
 use std::{
   collections::{BTreeMap, HashMap},
   fmt::Display,
@@ -266,14 +267,9 @@ impl Graph {
         break;
       }
 
-      let current_node_id = untested_nodes
-        .first()
-        .unwrap();
-      let current_node_copy = self
-        .points
-        .get_mut(current_node_id)
-        .unwrap()
-        .clone();
+      let Some(current_node_id) = untested_nodes.first() else { return; };
+      let Some(current_node) = self.points.get_mut(current_node_id) else { return; };
+      let current_node_distance = current_node.distance;
 
       // Set the current node to visited
       self
@@ -281,6 +277,11 @@ impl Graph {
         .get_mut(current_node_id)
         .unwrap()
         .visited = true;
+
+      // Skip testing the neighbours if the node is the end
+      if *current_node_id == end {
+        continue;
+      }
 
       let mut new_untested_nodes = Vec::<u8>::new();
 
@@ -294,16 +295,18 @@ impl Graph {
           continue;
         }
 
-        let neighbour = self
-          .points
-          .get_mut(&line.to)
-          .unwrap();
+        let Some(neighbour) = self.points.get_mut(&line.to) else { continue; };
 
         new_untested_nodes.push(line.to);
 
-        if current_node_copy.distance + (*line_length as u32) < neighbour.distance {
+        if current_node_distance + (*line_length as u32) < neighbour.distance {
           neighbour.parent = *current_node_id;
-          neighbour.distance = current_node_copy.distance + (*line_length as u32);
+          neighbour.distance = current_node_distance + (*line_length as u32);
+        } else if current_node_distance + (*line_length as u32) == neighbour.distance {
+          if rand::thread_rng().gen::<bool>() {
+            neighbour.parent = *current_node_id;
+            neighbour.distance = current_node_distance + (*line_length as u32);
+          }
         }
       }
 
@@ -385,7 +388,7 @@ impl Graph {
             .position
             .y as f32,
           2.0,
-          GREEN,
+          WHITE,
         );
       }
     }
@@ -852,7 +855,7 @@ impl Graph {
       .points
       .iter()
       .for_each(|point| {
-        println!("{}: {:?}", point.0, point.1);
+        println!("{} => {:?}", point.0, point.1);
       });
 
     println!("Lines:");
@@ -860,7 +863,7 @@ impl Graph {
       .lines
       .iter()
       .for_each(|line| {
-        println!("{}: {}", line.0, line.1);
+        println!("{} => {}", line.0, line.1);
       });
 
     match self.start {
