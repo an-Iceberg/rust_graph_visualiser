@@ -1,10 +1,14 @@
 mod graph;
 mod utils;
 
-use std::ops::Div;
-
+use egui_macroquad::{
+  draw,
+  egui::{epaint::Shadow, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window},
+  ui,
+};
 use graph::*;
-use macroquad::{hash, prelude::*, ui::root_ui};
+use macroquad::prelude::*;
+use std::ops::Div;
 
 fn window_configuration() -> Conf {
   return Conf {
@@ -21,13 +25,20 @@ fn window_configuration() -> Conf {
 async fn main() {
   let mut graph = Graph::new();
   let ui_width = 200;
-  let mut line_length = 1.0;
-  let mut mode = 0;
+  // TODO: put line_length into the graph struct
+  let mut line_length = 1;
+  let mut mode = Mode::Move;
 
-  setup(&mut graph);
+  let mut base_point = 5.;
+  let mut path_colour = [0., 1., 0.];
+  let mut point_colour = [1., 0.5, 0.];
+  let mut line_colour = [0., 1., 1.];
+  let mut bg_colour = [0.25, 0., 0.5];
+
+  // setup(&mut graph);
 
   loop {
-    clear_background(Color::from_rgba(20, 0, 40, 255));
+    clear_background(Color::from_vec(Vec4::new(bg_colour[0], bg_colour[1], bg_colour[2], 1.)));
 
     // Delete or backspace clears the graph of all points and lines
     if is_key_pressed(KeyCode::Backspace) || is_key_pressed(KeyCode::Delete) {
@@ -43,13 +54,14 @@ async fn main() {
       screen_width() - (ui_width as f32 + (2.0 * graph.get_radius() as f32)),
       screen_height() - (2.0 * graph.get_radius() as f32),
     ) {
-      handle_mouse_input(mode, &mut graph, line_length);
+      handle_mouse_input(&mode, &mut graph, line_length);
     }
 
     // --- GUI ---
     // TODO: replace existing GUI with egui
     // TODO: extract GUI into separate component (if possible)
     // TODO: style the GUI
+    /*
     root_ui().window(
       hash!(),
       Vec2 {
@@ -114,6 +126,149 @@ async fn main() {
         // TODO: FPS
       },
     );
+    */
+
+    ui(|egui_context| {
+      // Disabling all shadows
+      egui_context.set_visuals(Visuals {
+        window_shadow: Shadow::NONE,
+        window_rounding: Rounding {
+          nw: 10.,
+          ne: 0.,
+          sw: 10.,
+          se: 0.,
+        },
+        ..Default::default()
+      });
+
+      // egui ❤ macroquad
+      Window::new("Rust Graph Visualiser ❤")
+        .anchor(Align2::RIGHT_TOP, Vec2::new(0., 10.))
+        .constrain(true)
+        .collapsible(false)
+        .movable(false)
+        .resizable(false)
+        .fixed_size(Vec2::new(200., 700.))
+        .show(egui_context, |ui| {
+
+          ui.label("Select a mode:");
+          ui.horizontal(|ui|
+          { ui.selectable_value(&mut mode, Mode::Move, "Move");
+            ui.selectable_value(&mut mode, Mode::Line, "Line");
+            ui.selectable_value(&mut mode, Mode::Point, "Point");
+            ui.selectable_value(&mut mode, Mode::Path, "Path");
+          });
+
+          // The newlines are a hack to make all text fill up the same amount of vertical space
+          // TODO: (mode, graph.hovered_point_id)
+          match mode
+          { Mode::Move => ui.label("Left click on a point to select it and hold left click to move it around.\n\n"),
+            Mode::Line => ui.label("Left click on a point to select it and left click on another point to create a line or right click to delete an existing line."),
+            Mode::Point => ui.label("Left click somewhere to create a point or right click on a point to delete it.\n"),
+            Mode::Path => ui.label("Left click on a point to set the start and right click on a point to set the end.\n")
+          };
+
+          match mode
+          { Mode::Line =>
+            {
+              ui.separator();
+              ui.label("Line length:");
+              ui.add(Slider::new(&mut line_length, 1..=255).logarithmic(true));
+            }
+            Mode::Path =>
+            { ui.separator();
+              if ui.button("Find shortest path").clicked() {
+                graph.find_shortest_path();
+              }
+              ui.horizontal(|ui|
+              { ui.label("Pick the color of the path:");
+                ui.color_edit_button_rgb(&mut path_colour);
+              });
+            }
+            _ => ()
+          }
+
+          ui.separator();
+
+          ui.add_space(150.);
+
+          ui.separator();
+
+          ui.label("Add in a pre-made graph:");
+          ui.horizontal(|ui| {
+            if ui.button("Small").clicked() {
+              graph.insert_small_graph();
+            }
+            if ui.button("Medium").clicked() {
+              graph.insert_medium_graph();
+            }
+            if ui.button("Large").clicked() {
+              graph.insert_large_graph();
+            }
+            if ui.button("Clear").clicked() {
+              graph.clear();
+            }
+          });
+
+          ui.separator();
+
+          ui.horizontal(|ui| {
+            ui.label("Angle:");
+            ui.add_enabled_ui(false, |ui| {
+              ui.drag_angle(&mut graph.angle);
+            });
+          });
+          ui.horizontal(|ui| {
+            ui.add(Slider::new(&mut graph.angle, 0.261..=0.785));
+            if ui.button("Reset").clicked() {
+              graph.angle = 0.436;
+            }
+          });
+
+          ui.label("Wing size:");
+          ui.horizontal(|ui| {
+            ui.add(Slider::new(&mut graph.arrow_head_length, 1.0..=30.0));
+            if ui.button("Reset").clicked() {
+              graph.arrow_head_length = 20.0;
+            }
+          });
+
+          ui.label("Base point:");
+          ui.horizontal(|ui| {
+            ui.add(Slider::new(&mut base_point, 0.0..=10.0));
+            if ui.button("Reset").clicked() {}
+          });
+
+          ui.separator();
+
+          ui.label("Radius:");
+          ui.horizontal(|ui| {
+            ui.add(Slider::new(&mut graph.radius, 7..=20));
+            if ui.button("Reset").clicked() {
+              graph.radius = 13;
+            }
+          });
+
+          ui.separator();
+
+          Grid::new("colours")
+            .num_columns(2)
+            .striped(false)
+            .show(ui, |ui|
+            { ui.label("Point colour:");
+              ui.color_edit_button_rgb(&mut point_colour);
+              ui.end_row();
+
+              ui.label("Line colour:");
+              ui.color_edit_button_rgb(&mut line_colour);
+              ui.end_row();
+
+              ui.label("Background colour:");
+              ui.color_edit_button_rgb(&mut bg_colour);
+              ui.end_row();
+            });
+        });
+    });
 
     // ! dbg
     if is_key_pressed(KeyCode::P) {
@@ -136,13 +291,21 @@ async fn main() {
       graph.insert_large_graph();
     }
 
+    // ! dbg
+    if is_key_pressed(KeyCode::C) {
+      println!("bg_colour: {:?}", bg_colour);
+      println!("  as vec4: {:?}", Vec4::new(bg_colour[0], bg_colour[1], bg_colour[2], 1.))
+    }
+
     graph.paint_graph();
+
+    draw();
 
     next_frame().await;
   }
 }
 
-fn handle_mouse_input(mode: usize, graph: &mut Graph, line_length: f32) {
+fn handle_mouse_input(mode: &Mode, graph: &mut Graph, line_length: u32) {
   match (
     mode,
     is_mouse_button_pressed(MouseButton::Left),
@@ -155,12 +318,12 @@ fn handle_mouse_input(mode: usize, graph: &mut Graph, line_length: f32) {
     // --- MOVE ---
 
     // Select a point to be moved around
-    (0, true, _, _, false, Some(hovered_point_id), _) => {
+    (Mode::Move, true, _, _, false, Some(hovered_point_id), _) => {
       graph.selected_point_id = Some(hovered_point_id);
     },
 
     // Move a point around
-    (0, _, true, _, false, _, Some(selected_point_id)) => {
+    (Mode::Move, _, true, _, false, _, Some(selected_point_id)) => {
       graph.set_point_coordinates(
         selected_point_id,
         IVec2 {
@@ -171,14 +334,14 @@ fn handle_mouse_input(mode: usize, graph: &mut Graph, line_length: f32) {
     },
 
     // Releasing the selected point
-    (0, _, _, true, false, _, _) => {
+    (Mode::Move, _, _, true, false, _, _) => {
       graph.selected_point_id = None;
     },
 
     // --- POINT ---
 
     // Create a point
-    (1, true, _, _, false, None, None) => {
+    (Mode::Point, true, _, _, false, None, None) => {
       graph.add_point(IVec2 {
         x: mouse_position().0 as i32,
         y: mouse_position().1 as i32,
@@ -186,30 +349,30 @@ fn handle_mouse_input(mode: usize, graph: &mut Graph, line_length: f32) {
     },
 
     // Remove a point
-    (1, false, _, _, true, Some(hovered_point_id), _) => {
+    (Mode::Point, false, _, _, true, Some(hovered_point_id), _) => {
       graph.remove_point(hovered_point_id);
     },
 
     // --- LINE ---
 
     // Select a point to draw a line from
-    (2, true, _, _, false, Some(hovered_point_id), None) => {
+    (Mode::Line, true, _, _, false, Some(hovered_point_id), None) => {
       graph.selected_point_id = Some(hovered_point_id);
     },
 
     // Unset the selected point if no other point is clicked on
-    (2, true, _, _, _, None, Some(_)) | (2, _, _, _, true, None, Some(_)) => {
+    (Mode::Line, true, _, _, _, None, Some(_)) | (Mode::Line, _, _, _, true, None, Some(_)) => {
       graph.selected_point_id = None;
     },
 
     // Select a point to draw the line to
-    (2, true, _, _, false, Some(hovered_point_id), Some(selected_point_id)) => {
+    (Mode::Line, true, _, _, false, Some(hovered_point_id), Some(selected_point_id)) => {
       graph.add_line(selected_point_id, hovered_point_id, line_length as u16);
       graph.selected_point_id = None;
     },
 
     // Deletes the selected line
-    (2, false, _, _, true, Some(hovered_point_id), Some(selected_point_id)) => {
+    (Mode::Line, false, _, _, true, Some(hovered_point_id), Some(selected_point_id)) => {
       graph.remove_line(selected_point_id, hovered_point_id);
       graph.selected_point_id = None;
     },
@@ -217,25 +380,25 @@ fn handle_mouse_input(mode: usize, graph: &mut Graph, line_length: f32) {
     // --- PATH ---
 
     // Select a start point with left click
-    (3, true, _, _, false, Some(hovered_point_id), None) => {
+    (Mode::Path, true, _, _, false, Some(hovered_point_id), None) => {
       graph.start = Some(hovered_point_id);
       graph.clear_path();
     },
 
     // Unsetting the start point
-    (3, true, _, _, false, None, None) => {
+    (Mode::Path, true, _, _, false, None, None) => {
       graph.start = None;
       graph.clear_path();
     },
 
     // Select an end point with right click
-    (3, false, _, _, true, Some(hovered_point_id), None) => {
+    (Mode::Path, false, _, _, true, Some(hovered_point_id), None) => {
       graph.end = Some(hovered_point_id);
       graph.clear_path();
     },
 
     // Unsetting the end point
-    (3, false, _, _, true, None, None) => {
+    (Mode::Path, false, _, _, true, None, None) => {
       graph.end = None;
       graph.clear_path();
     },
@@ -278,6 +441,7 @@ pub fn draw_pill(x: f32, y: f32, width: f32, height: f32, color: Color) {
   draw_circle(x + width, y + height.div(2.0), height.div(2.0), color);
 }
 
+#[derive(PartialEq, Eq)]
 enum Mode {
   Move,
   Point,

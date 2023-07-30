@@ -1,5 +1,4 @@
 use crate::{draw_pill, utils};
-use itertools::Itertools;
 use macroquad::{
   prelude::{mouse_position, Color, IVec2, BLACK, GREEN, MAGENTA, ORANGE, WHITE, YELLOW},
   shapes::{draw_circle, draw_circle_lines, draw_line, draw_triangle},
@@ -20,14 +19,14 @@ pub(crate) struct Graph {
   pub(crate) end: Option<u8>,
 
   /// This is the id of the point that the mouse is currently hovering over
-  hovered_point_id: Option<u8>,
+  pub hovered_point_id: Option<u8>,
 
   /// This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   pub(crate) selected_point_id: Option<u8>,
 
   has_hovered_point_been_checked: bool,
   max_amount_of_points: u16,
-  radius: u8,
+  pub radius: u8,
   padding: u8,
 
   /// Contains all data for the points
@@ -48,6 +47,9 @@ pub(crate) struct Graph {
   ///
   /// The 0th element is the start, the last element is the end
   path: Option<Vec<u8>>,
+
+  pub angle: f32,
+  pub arrow_head_length: f32,
 }
 
 impl Default for Graph {
@@ -64,6 +66,8 @@ impl Default for Graph {
       points: BTreeMap::<u8, Node>::new(),
       lines: HashMap::<Line, u16>::new(),
       path: None,
+      angle: 0.436,
+      arrow_head_length: 20.0,
     };
   }
 }
@@ -368,8 +372,12 @@ impl Graph {
   pub fn paint_path(&self) {
     if let Some(path) = &self.path {
       for (from, to) in path
-        .into_iter()
-        .tuple_windows::<(&u8, &u8)>()
+        .iter()
+        .zip(
+          path
+            .iter()
+            .skip(1),
+        )
       {
         let Some(from_point) = self.points.get(from) else { continue; };
         let Some(to_point) = self.points.get(to) else { continue; };
@@ -535,9 +543,11 @@ impl Graph {
                     .length())) as i32,
           };
 
+          /*
           // The angle is in radians
           let angle: f32 = 0.436;
           let arrow_head_length = 20.0;
+          */
 
           // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
           draw_line(
@@ -583,7 +593,7 @@ impl Graph {
             helper_point.as_vec2(),
             IVec2 {
               x: arrow_head_location.x
-                + ((arrow_head_length
+                + ((self.arrow_head_length
                   / direction
                     .as_vec2()
                     .length())
@@ -593,16 +603,20 @@ impl Graph {
                     - to_point
                       .position
                       .x) as f32
-                    * angle.cos())
+                    * self
+                      .angle
+                      .cos())
                     - ((from_point
                       .position
                       .y
                       - to_point
                         .position
                         .y) as f32
-                      * angle.sin()))) as i32,
+                      * self
+                        .angle
+                        .sin()))) as i32,
               y: arrow_head_location.y
-                + ((arrow_head_length
+                + ((self.arrow_head_length
                   / direction
                     .as_vec2()
                     .length())
@@ -612,14 +626,18 @@ impl Graph {
                     - to_point
                       .position
                       .y) as f32
-                    * angle.cos())
+                    * self
+                      .angle
+                      .cos())
                     + ((from_point
                       .position
                       .x
                       - to_point
                         .position
                         .x) as f32
-                      * angle.sin()))) as i32,
+                      * self
+                        .angle
+                        .sin()))) as i32,
             }
             .as_vec2(),
             Color::from_rgba(0, 255, 255, 255),
@@ -631,7 +649,7 @@ impl Graph {
             helper_point.as_vec2(),
             IVec2 {
               x: arrow_head_location.x
-                + ((arrow_head_length
+                + ((self.arrow_head_length
                   / direction
                     .as_vec2()
                     .length())
@@ -641,16 +659,20 @@ impl Graph {
                     - to_point
                       .position
                       .x) as f32
-                    * angle.cos())
+                    * self
+                      .angle
+                      .cos())
                     + ((from_point
                       .position
                       .y
                       - to_point
                         .position
                         .y) as f32
-                      * angle.sin()))) as i32,
+                      * self
+                        .angle
+                        .sin()))) as i32,
               y: arrow_head_location.y
-                + ((arrow_head_length
+                + ((self.arrow_head_length
                   / direction
                     .as_vec2()
                     .length())
@@ -660,14 +682,18 @@ impl Graph {
                     - to_point
                       .position
                       .y) as f32
-                    * angle.cos())
+                    * self
+                      .angle
+                      .cos())
                     - ((from_point
                       .position
                       .x
                       - to_point
                         .position
                         .x) as f32
-                      * angle.sin()))) as i32,
+                      * self
+                        .angle
+                        .sin()))) as i32,
             }
             .as_vec2(),
             Color::from_rgba(0, 255, 255, 255),
