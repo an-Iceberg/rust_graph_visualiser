@@ -95,7 +95,7 @@
       "name": "Vite",
       "type": "f5anything",
       "request": "launch",
-      "command": "vite ${workspaceFolder}/dist",
+      "command": "vite ${workspaceFolder}/docs",
       "terminalName": "Vite",
       "showTerminal": true
     },

@@ -1,6 +1,6 @@
 use crate::{draw_pill, utils};
 use macroquad::{
-  prelude::{mouse_position, Color, IVec2, BLACK, GREEN, MAGENTA, ORANGE, WHITE, YELLOW},
+  prelude::{mouse_position, Color, IVec2, Vec4, BLACK, GREEN, MAGENTA, YELLOW},
   shapes::{draw_circle, draw_circle_lines, draw_line, draw_triangle},
   text::{draw_text, get_text_center, measure_text},
 };
@@ -19,14 +19,13 @@ pub(crate) struct Graph {
   pub(crate) end: Option<u8>,
 
   /// This is the id of the point that the mouse is currently hovering over
-  pub hovered_point_id: Option<u8>,
+  pub(crate) hovered_point_id: Option<u8>,
 
   /// This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   pub(crate) selected_point_id: Option<u8>,
 
   has_hovered_point_been_checked: bool,
   max_amount_of_points: u16,
-  pub radius: u8,
   padding: u8,
 
   /// Contains all data for the points
@@ -48,8 +47,16 @@ pub(crate) struct Graph {
   /// The 0th element is the start, the last element is the end
   path: Option<Vec<u8>>,
 
-  pub angle: f32,
-  pub arrow_head_length: f32,
+  /// User adjustable visuals
+  pub(crate) angle: f32,
+  pub(crate) arrow_head_length: f32,
+  pub(crate) radius: u8,
+  pub(crate) line_length: u16,
+  pub(crate) path_thickness: f32,
+  pub(crate) base_point: f32,
+  pub(crate) path_color: [f32; 3],
+  pub(crate) line_color: [f32; 3],
+  pub(crate) point_color: [f32; 3],
 }
 
 impl Default for Graph {
@@ -67,7 +74,13 @@ impl Default for Graph {
       lines: HashMap::<Line, u16>::new(),
       path: None,
       angle: 0.436,
-      arrow_head_length: 20.0,
+      arrow_head_length: 20.,
+      line_length: 1,
+      path_thickness: 2.,
+      base_point: 15.,
+      path_color: [0., 1., 0.],
+      point_color: [1., 0.5, 0.],
+      line_color: [0., 1., 1.],
     };
   }
 }
@@ -135,7 +148,7 @@ impl Graph {
   }
 
   /// Adds a line; if it already exists, the length gets updated
-  pub fn add_line(&mut self, from_id: u8, to_id: u8, line_length: u16) {
+  pub fn add_line(&mut self, from_id: u8, to_id: u8) {
     let new_line = Line {
       from: from_id,
       to: to_id,
@@ -145,11 +158,11 @@ impl Graph {
       .lines
       .get_mut(&new_line)
     {
-      Some(length) => *length = line_length,
+      Some(length) => *length = self.line_length,
       None => {
         _ = self
           .lines
-          .insert(new_line, line_length)
+          .insert(new_line, self.line_length)
       },
     }
 
@@ -395,8 +408,8 @@ impl Graph {
           to_point
             .position
             .y as f32,
-          2.0,
-          WHITE,
+          self.path_thickness,
+          Color::from_vec(Vec4::new(self.path_color[0], self.path_color[1], self.path_color[2], 1.)),
         );
       }
     }
@@ -416,7 +429,11 @@ impl Graph {
           .position
           .y as f32,
         self.radius as f32,
-        if self.selected_point_id == Some(*id) { YELLOW } else { ORANGE },
+        if self.selected_point_id == Some(*id) {
+          YELLOW
+        } else {
+          Color::from_vec(Vec4::new(self.point_color[0], self.point_color[1], self.point_color[2], 1.))
+        },
       );
 
       let text_center = get_text_center(
@@ -529,7 +546,7 @@ impl Graph {
               .position
               .x
               + (direction.x as f32
-                * ((self.radius + 15) as f32
+                * ((self.radius as f32 + self.base_point)
                   / direction
                     .as_vec2()
                     .length())) as i32,
@@ -537,17 +554,11 @@ impl Graph {
               .position
               .y
               + (direction.y as f32
-                * ((self.radius + 15) as f32
+                * ((self.radius as f32 + self.base_point)
                   / direction
                     .as_vec2()
                     .length())) as i32,
           };
-
-          /*
-          // The angle is in radians
-          let angle: f32 = 0.436;
-          let arrow_head_length = 20.0;
-          */
 
           // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
           draw_line(
@@ -570,7 +581,7 @@ impl Graph {
             arrow_head_location.x as f32,
             arrow_head_location.y as f32,
             1.0,
-            Color::from_rgba(0, 255, 255, 255),
+            Color::from_vec(Vec4::new(self.line_color[0], self.line_color[1], self.line_color[2], 1.)),
           );
 
           /*
@@ -640,7 +651,7 @@ impl Graph {
                         .sin()))) as i32,
             }
             .as_vec2(),
-            Color::from_rgba(0, 255, 255, 255),
+            Color::from_vec(Vec4::new(self.line_color[0], self.line_color[1], self.line_color[2], 1.)),
           );
 
           // Right arrow head wing
@@ -696,7 +707,7 @@ impl Graph {
                         .sin()))) as i32,
             }
             .as_vec2(),
-            Color::from_rgba(0, 255, 255, 255),
+            Color::from_vec(Vec4::new(self.line_color[0], self.line_color[1], self.line_color[2], 1.)),
           );
         },
 
@@ -772,7 +783,7 @@ impl Graph {
               + self
                 .padding
                 .mul(2) as f32,
-            Color::from_rgba(0, 255, 255, 255),
+            Color::from_vec(Vec4::new(self.line_color[0], self.line_color[1], self.line_color[2], 1.)),
           );
 
           draw_text(
