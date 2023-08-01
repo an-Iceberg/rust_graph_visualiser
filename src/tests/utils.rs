@@ -3,31 +3,31 @@ use super::*;
 // TODO: extract each assertion into its own test
 #[test]
 pub fn circle_tests() {
-  assert!(is_point_in_circle(240.0, 78.0, 233.0, 73.0, 13.0));
-  assert!(!is_point_in_circle(752.0, 251.0, 725.0, 270.0, 13.0));
-  assert!(!is_point_in_circle(81.0, 24.0, 40.0, 40.0, 20.0));
-  assert!(is_point_in_circle(25.0, 29.0, 40.0, 40.0, 20.0));
-  assert!(!is_point_in_circle(189.0, 176.0, 143.0, 136.0, 57.0));
-  assert!(is_point_in_circle(192.0, 87.0, 143.0, 136.0, 75.0));
-  assert!(!is_point_in_circle(177.0, 243.0, 153.0, 250.0, 4.0));
-  assert!(is_point_in_circle(201.0, 251.0, 200.0, 250.0, 4.0));
-  assert!(!is_point_in_circle(1020.0, 315.0, 873.0, 310.0, 48.0));
-  assert!(is_point_in_circle(606.0, 411.0, 615.0, 404.0, 22.0));
+  assert!(is_point_in_circle(240, 78, 233, 73, 13));
+  assert!(!is_point_in_circle(752, 251, 725, 270, 13));
+  assert!(!is_point_in_circle(81, 24, 40, 40, 20));
+  assert!(is_point_in_circle(25, 29, 40, 40, 20));
+  assert!(!is_point_in_circle(189, 176, 143, 136, 57));
+  assert!(is_point_in_circle(192, 87, 143, 136, 75));
+  assert!(!is_point_in_circle(177, 243, 153, 250, 4));
+  assert!(is_point_in_circle(201, 251, 200, 250, 4));
+  assert!(!is_point_in_circle(1020, 315, 873, 310, 48));
+  assert!(is_point_in_circle(606, 411, 615, 404, 22));
 }
 
 #[test]
 pub fn rectangle_tests() {
-  assert!(!is_point_in_rectangle(747.0, 313.0, 600.0, 357.0, 100.0, 100.0));
-  assert!(!is_point_in_rectangle(433.0, 226.0, 448.0, 170.0, 38.0, 100.0));
-  assert!(is_point_in_rectangle(382.0, 274.0, 213.0, 165.0, 324.0, 238.0));
-  assert!(!is_point_in_rectangle(664.0, 180.0, 563.0, 211.0, 62.0, 67.0));
-  assert!(!is_point_in_rectangle(601.0, 182.0, 587.0, 389.0, 31.0, 92.0));
-  assert!(!is_point_in_rectangle(821.0, 85.0, 509.0, 53.0, 276.0, 67.0));
-  assert!(!is_point_in_rectangle(229.0, 328.0, 77.0, 139.0, 143.0, 181.0));
-  assert!(!is_point_in_rectangle(450.0, 618.0, 383.0, 384.0, 191.0, 134.0));
-  assert!(!is_point_in_rectangle(729.0, 685.0, 813.0, 418.0, 96.0, 248.0));
-  assert!(!is_point_in_rectangle(305.0, 617.0, 355.0, 588.0, 96.0, 86.0));
-  assert!(is_point_in_rectangle(637.0, 297.0, 419.0, 68.0, 248.0, 248.0));
-  assert!(is_point_in_rectangle(803.0, 429.0, 781.0, 404.0, 210.0, 134.0));
-  assert!(is_point_in_rectangle(135.0, 88.0, 104.0, 55.0, 162.0, 305.0));
+  assert!(!is_point_in_rectangle(747, 313, 600, 357, 100, 100));
+  assert!(!is_point_in_rectangle(433, 226, 448, 170, 38, 100));
+  assert!(is_point_in_rectangle(382, 274, 213, 165, 324, 238));
+  assert!(!is_point_in_rectangle(664, 180, 563, 211, 62, 67));
+  assert!(!is_point_in_rectangle(601, 182, 587, 389, 31, 92));
+  assert!(!is_point_in_rectangle(821, 85, 509, 53, 276, 67));
+  assert!(!is_point_in_rectangle(229, 328, 77, 139, 143, 181));
+  assert!(!is_point_in_rectangle(450, 618, 383, 384, 191, 134));
+  assert!(!is_point_in_rectangle(729, 685, 813, 418, 96, 248));
+  assert!(!is_point_in_rectangle(305, 617, 355, 588, 96, 86));
+  assert!(is_point_in_rectangle(637, 297, 419, 68, 248, 248));
+  assert!(is_point_in_rectangle(803, 429, 781, 404, 210, 134));
+  assert!(is_point_in_rectangle(135, 88, 104, 55, 162, 305));
 }

@@ -1,4 +1,3 @@
-use crate::{draw_pill, utils};
 use macroquad::{
   prelude::{mouse_position, Color, IVec2, Vec4, BLACK, GREEN, MAGENTA, YELLOW},
   shapes::{draw_circle, draw_circle_lines, draw_line, draw_triangle},
@@ -10,6 +9,8 @@ use std::{
   fmt::Display,
   ops::{Div, Mul},
 };
+
+use crate::utils;
 
 /// ### Graph
 ///
@@ -190,15 +191,15 @@ impl Graph {
       .iter()
     {
       if utils::is_point_in_circle(
-        mouse_position().0,
-        mouse_position().1,
+        mouse_position().0 as i32,
+        mouse_position().1 as i32,
         node
           .position
-          .x as f32,
+          .x,
         node
           .position
-          .y as f32,
-        self.radius as f32,
+          .y,
+        self.radius as i32,
       ) {
         self.hovered_point_id = Some(*id);
         return Some(*id);
@@ -267,7 +268,7 @@ impl Graph {
 
     // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
 
-    // TOFIX: large graph doesn't give shortest path from 6 to 18
+    // TOFIX: large graph doesn't give shortest path from 6 to 18 (point 10 seems to cause it)
     while !untested_nodes.is_empty() {
       // Remove all visited nodes
       untested_nodes.retain(|id| {
@@ -380,38 +381,36 @@ impl Graph {
     }
   }
 
-  // TODO: print arrowhead over the path
-  // TODO: use functional pattern if possible
   pub fn paint_path(&self) {
-    if let Some(path) = &self.path {
-      for (from, to) in path
-        .iter()
-        .zip(
-          path
-            .iter()
-            .skip(1),
-        )
-      {
-        let Some(from_point) = self.points.get(from) else { continue; };
-        let Some(to_point) = self.points.get(to) else { continue; };
+    let Some(path) = &self.path else { return; };
 
-        draw_line(
-          from_point
-            .position
-            .x as f32,
-          from_point
-            .position
-            .y as f32,
-          to_point
-            .position
-            .x as f32,
-          to_point
-            .position
-            .y as f32,
-          self.path_thickness,
-          Color::from_vec(Vec4::new(self.path_color[0], self.path_color[1], self.path_color[2], 1.)),
-        );
-      }
+    for (from, to) in path
+      .iter()
+      .zip(
+        path
+          .iter()
+          .skip(1),
+      )
+    {
+      let Some(from_point) = self.points.get(from) else { continue; };
+      let Some(to_point) = self.points.get(to) else { continue; };
+
+      draw_line(
+        from_point
+          .position
+          .x as f32,
+        from_point
+          .position
+          .y as f32,
+        to_point
+          .position
+          .x as f32,
+        to_point
+          .position
+          .y as f32,
+        self.path_thickness,
+        Color::from_vec(Vec4::new(self.path_color[0], self.path_color[1], self.path_color[2], 1.)),
+      );
     }
   }
 
@@ -492,7 +491,7 @@ impl Graph {
     self.has_hovered_point_been_checked = false;
   }
 
-  pub fn paint_lines(&self) {
+  pub fn paint_arrow_heads(&self) {
     for (line, _) in self
       .lines
       .iter()
@@ -521,6 +520,7 @@ impl Graph {
                 .y,
           };
 
+          // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
           let arrow_head_location = IVec2 {
             x: to_point
               .position
@@ -560,7 +560,7 @@ impl Graph {
                     .length())) as i32,
           };
 
-          // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
+          /*
           draw_line(
             from_point
               .position
@@ -583,6 +583,7 @@ impl Graph {
             1.0,
             Color::from_vec(Vec4::new(self.line_color[0], self.line_color[1], self.line_color[2], 1.)),
           );
+          */
 
           /*
             x1/y1 are the start of the line, x2/y2 are the end of the line where the head of the arrow should be
@@ -716,6 +717,33 @@ impl Graph {
     }
   }
 
+  pub fn paint_lines(&self) {
+    for (line, _) in self
+      .lines
+      .iter()
+    {
+      let Some(from_point) = self.points.get(&line.from) else { continue; };
+      let Some(to_point) = self.points.get(&line.to) else { continue; };
+
+      draw_line(
+        from_point
+          .position
+          .x as f32,
+        from_point
+          .position
+          .y as f32,
+        to_point
+          .position
+          .x as f32,
+        to_point
+          .position
+          .y as f32,
+        1.0,
+        Color::from_vec(Vec4::new(self.line_color[0], self.line_color[1], self.line_color[2], 1.0)),
+      );
+    }
+  }
+
   pub fn paint_line_lengths(&self) {
     for (line, length) in self
       .lines
@@ -768,7 +796,7 @@ impl Graph {
             1.0,
           );
 
-          draw_pill(
+          utils::draw_pill(
             position.x as f32
               - text_dimensions
                 .width
@@ -808,7 +836,7 @@ impl Graph {
     let text_dimensions = measure_text(text, None, 20, 1.0);
 
     // A 2 pixel gap between the label and the point is hard-coded
-    draw_pill(
+    utils::draw_pill(
       position.x as f32
         - text_dimensions
           .width
@@ -852,6 +880,7 @@ impl Graph {
     {
       self.paint_lines();
       self.paint_path();
+      self.paint_arrow_heads();
       self.paint_line_lengths();
     }
 
