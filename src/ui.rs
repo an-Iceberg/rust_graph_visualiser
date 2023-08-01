@@ -169,7 +169,7 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut Graph, mut bg_color: &mut [f
           ui.separator();
 
           ui.horizontal(|ui| {
-            ui.label("v0.2.1");
+            ui.label("v1.0.0");
             ui.separator();
             ui.label(format!("FPS:{}", get_fps()));
           });
