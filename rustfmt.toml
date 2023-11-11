@@ -20,3 +20,4 @@ fn_single_line = true
 where_single_line = true
 struct_lit_single_line = true
 empty_item_single_line = true
+disable_all_formatting = true
