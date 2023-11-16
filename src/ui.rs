@@ -1,11 +1,11 @@
-use crate::{graph::Graph, utils::Mode};
+use crate::{graph::ShortestPathGraph, utils::Mode};
 use egui_macroquad::{
   egui::{epaint::Shadow, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window},
   ui,
 };
 use macroquad::time::get_fps;
 
-pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut Graph, mut bg_color: &mut [f32; 3]) {
+pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut ShortestPathGraph, mut bg_color: &mut [f32; 3]) {
   ui(|egui_context| {
     // Disabling all shadows
     egui_context.set_visuals(Visuals {

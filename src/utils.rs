@@ -1,4 +1,4 @@
-use crate::graph::Graph;
+use crate::graph::ShortestPathGraph;
 use macroquad::{
   prelude::{
     is_mouse_button_down, is_mouse_button_pressed, is_mouse_button_released, mouse_position, Color, IVec2, MouseButton,
@@ -31,7 +31,7 @@ pub(crate) fn draw_pill(x: f32, y: f32, width: f32, height: f32, color: Color) {
   draw_circle(x + width, y + height.div(2.0), height.div(2.0), color);
 }
 
-pub(crate) fn handle_mouse_input(mode: &Mode, graph: &mut Graph) {
+pub(crate) fn handle_mouse_input(mode: &Mode, graph: &mut ShortestPathGraph) {
   match (
     mode,
     is_mouse_button_pressed(MouseButton::Left),

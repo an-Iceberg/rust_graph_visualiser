@@ -17,43 +17,52 @@ use crate::utils;
 /// ### Graph
 ///
 /// It contains nodes and edges connecting those nodes.
-pub(crate) struct Graph
+pub(crate) struct ShortestPathGraph
 {
+  // TODO: move these into the main module
   pub(crate) start: Option<u8>,
   pub(crate) end: Option<u8>,
 
+  // TODO: move these into the main module
   /// This is the id of the point that the mouse is currently hovering over
   pub(crate) hovered_point_id: Option<u8>,
 
+  // TODO: move these into the main module
   /// This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   pub(crate) selected_point_id: Option<u8>,
 
+  // TODO: move these into the main module
   has_hovered_point_been_checked: bool,
   max_amount_of_points: u16,
   padding: u8,
 
-  /// The actual graph data is stored here
-  graph: HashMap<u8, DijkstraNode>,
+  /// The actual graph data is stored here.
+  ///
+  /// Since we only allow 100 nodes and we identify them based on their id we can use the properties
+  /// of an array to our advantage.
+  graph: [Option<DijkstraNode>;100],
 
   /// Contains all data for the points
   ///
   /// Key: point id
   ///
   /// Value: point position
-  points: BTreeMap<u8, Node>,
+  points: BTreeMap<u8, DijkstraNode>,
 
   /// Contains all data for the lines
   ///
   /// Key: Line (2 ids)
   ///
   /// Value: line length
-  lines: HashMap<Line, u16>,
+  lines: HashMap<Edge, u16>,
 
+  // TODO: move these into the main module
   /// The path is a vector of all the point ids that the graph traverses
   ///
   /// The 0th element is the start, the last element is the end
   path: Option<Vec<u8>>,
 
+  // TODO: move these into the main module
   /// User adjustable visuals
   pub(crate) angle: f32,
   pub(crate) arrow_head_length: f32,
@@ -68,7 +77,7 @@ pub(crate) struct Graph
 
 struct DijkstraNode
 {
-  position: Vec2,
+  position: Position,
   parent: Option<u8>,
   distance: Option<u8>,
   visited: bool,
@@ -81,11 +90,17 @@ struct Edge
   distance: u16
 }
 
-impl Default for Graph
+struct Position
+{
+  x: f32,
+  y: f32
+}
+
+impl Default for ShortestPathGraph
 {
   fn default() -> Self
   {
-    return Graph
+    return ShortestPathGraph
     {
       start: None,
       end: None,
@@ -95,8 +110,8 @@ impl Default for Graph
       max_amount_of_points: 100,
       radius: 13,
       padding: 3,
-      points: BTreeMap::<u8, Node>::new(),
-      lines: HashMap::<Line, u16>::new(),
+      points: BTreeMap::<u8, DijkstraNode>::new(),
+      lines: HashMap::<Edge, u16>::new(),
       path: None,
       angle: 0.436,
       arrow_head_length: 20.,
@@ -106,92 +121,93 @@ impl Default for Graph
       path_color: [0., 1., 0.],
       point_color: [1., 0.5, 0.],
       line_color: [0., 1., 1.],
+      graph:
+      [
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+        None,None,None,None,None,None,None,None,None,None,
+      ]
     };
   }
 }
 
-impl Graph
+impl ShortestPathGraph
 {
-  pub fn new() -> Graph
-  { Graph { ..Graph::default() } }
+  pub fn new() -> ShortestPathGraph
+  { ShortestPathGraph { ..ShortestPathGraph::default() } }
 
   pub fn points_amount(&self) -> usize
   { self.points.len() }
 
-  pub fn add_point(&mut self, coordinates: IVec2)
+  pub fn add_point(&mut self, id: usize, x: f32, y: f32)
   {
-    // Limiting the amount of available points to 100
-    if self.points_amount() >= self.max_amount_of_points as usize
-    { return; }
+    if id > 100 { return; }
 
-    let mut smallest_missing_id = 1;
-
-    // Finding the smallest missing point id
-    for (point_id, _) in self.points.iter()
-    {
-      // Incrementing the missing id until it doesn't match a given point id
-      if *point_id == smallest_missing_id
-      {
-        smallest_missing_id += 1;
-        continue;
-      }
-    }
-
-    self.points.insert(smallest_missing_id, Node::new(coordinates, smallest_missing_id));
-
-    self.clear_path();
+    if self.graph[id].is_none()
+    { self.graph[id] = Some(DijkstraNode::new(x, y)); }
   }
 
-  pub fn remove_point(&mut self, id: u8)
+  pub fn remove_point(&mut self, id: usize)
   {
-    // Deleting all lines associated with this point
-    self.lines.retain(|line, _|
-    {
-      return line.from != id && line.to != id;
-    });
+    if id > 100 { return; }
 
-    self.points.remove(&id);
-
-    self.clear_path();
+    self.graph[id] = None;
   }
 
-  pub fn set_point_coordinates(&mut self, point_id: u8, new_position: IVec2)
+  // TODO: instead of this, create methods on the DijkstraNode struct
+  fn update_node_position(&mut self, id: usize, x: f32, y: f32)
   {
-    if let Some(node) = self.points.get_mut(&point_id)
+    if id > 100 { return; }
+
+    if let Some(node) = &mut self.graph[id]
     {
-      node.position = new_position;
+      node.position.x = x;
+      node.position.y = y;
     }
   }
 
   /// Adds a line; if it already exists, the length gets updated
-  pub fn add_line(&mut self, from_id: u8, to_id: u8)
+  fn add_line(&mut self, from: usize, to: usize, distance: u16)
   {
-    let new_line = Line
-    {
-      from: from_id,
-      to: to_id,
-    };
+    if from > 100 || to > 100 { return; }
 
-    match self.lines.get_mut(&new_line)
-    {
-      Some(length) => *length = self.line_length,
-      None => _ = self.lines.insert(new_line, self.line_length)
-    }
-
-    self.clear_path();
+    if let Some(node) = &mut self.graph[from]
+    { node.edges.push(Edge { destination: to, distance }); }
   }
 
-  pub fn remove_line(&mut self, from_id: u8, to_id: u8)
+  fn remove_line(&mut self, from: usize, to: usize)
   {
-    let line = Line
+    if from > 100 || to > 100 { return; }
+
+    if let Some(node) = &mut self.graph[from]
     {
-      from: from_id,
-      to: to_id,
-    };
+      if node.edges.get(to).is_some()
+      { node.edges.remove(to); }
+    }
+  }
 
-    self.lines.remove(&line);
+  // TODO: instead of this, create methods on the Edge struct
+  fn update_line_distance(&mut self, from: usize, to: usize, distance: u16)
+  {
+    if from > 100 || to > 100 { return; }
 
-    self.clear_path();
+    if let Some(node) = &mut self.graph[from]
+    {
+      if node.edges.get(to).is_some()
+      { node.edges.get_mut(to).unwrap().distance = distance; }
+    }
+  }
+
+  fn find_shortest_path(&mut self, start: usize, end: usize)
+  {
+    todo!();
   }
 
   pub fn find_hovered_point(&mut self) -> Option<u8>
@@ -472,22 +488,8 @@ impl Graph
 
           /*
           draw_line(
-            from_point
-              .position
-              .x as f32
-              + (direction.x as f32
-                * (-(self.radius as f32)
-                  / direction
-                    .as_vec2()
-                    .length())),
-            from_point
-              .position
-              .y as f32
-              + (direction.y as f32
-                * (-(self.radius as f32)
-                  / direction
-                    .as_vec2()
-                    .length())),
+            from_point.position.x as f32 + (direction.x as f32 * (-(self.radius as f32) / direction.as_vec2().length())),
+            from_point.position.y as f32 + (direction.y as f32 * (-(self.radius as f32) / direction.as_vec2().length())),
             arrow_head_location.x as f32,
             arrow_head_location.y as f32,
             1.0,
@@ -784,30 +786,30 @@ impl Graph
     self.clear();
 
     self.points = BTreeMap::from([
-      (1, Node::new(IVec2 { x: 942, y: 355 }, 1)),
-      (2, Node::new(IVec2 { x: 720, y: 208 }, 2)),
-      (3, Node::new(IVec2 { x: 198, y: 342 }, 3)),
-      (4, Node::new(IVec2 { x: 463, y: 507 }, 4)),
-      (5, Node::new(IVec2 { x: 735, y: 513 }, 5)),
-      (6, Node::new(IVec2 { x: 458, y: 346 }, 6)),
-      (7, Node::new(IVec2 { x: 468, y: 202 }, 7)),
-      (8, Node::new(IVec2 { x: 721, y: 360 }, 8)),
+      (1, DijkstraNode::new(IVec2 { x: 942, y: 355 }, 1)),
+      (2, DijkstraNode::new(IVec2 { x: 720, y: 208 }, 2)),
+      (3, DijkstraNode::new(IVec2 { x: 198, y: 342 }, 3)),
+      (4, DijkstraNode::new(IVec2 { x: 463, y: 507 }, 4)),
+      (5, DijkstraNode::new(IVec2 { x: 735, y: 513 }, 5)),
+      (6, DijkstraNode::new(IVec2 { x: 458, y: 346 }, 6)),
+      (7, DijkstraNode::new(IVec2 { x: 468, y: 202 }, 7)),
+      (8, DijkstraNode::new(IVec2 { x: 721, y: 360 }, 8)),
     ]);
 
-    self.lines = HashMap::<Line, u16>::from([
-      (Line { from: 4, to: 5 }, 3),
-      (Line { from: 3, to: 6 }, 5),
-      (Line { from: 6, to: 8 }, 4),
-      (Line { from: 7, to: 2 }, 5),
-      (Line { from: 2, to: 1 }, 5),
-      (Line { from: 6, to: 2 }, 7),
-      (Line { from: 4, to: 8 }, 5),
-      (Line { from: 8, to: 1 }, 4),
-      (Line { from: 3, to: 7 }, 4),
-      (Line { from: 3, to: 4 }, 7),
-      (Line { from: 7, to: 8 }, 6),
-      (Line { from: 6, to: 5 }, 8),
-      (Line { from: 5, to: 1 }, 3),
+    self.lines = HashMap::<Edge, u16>::from([
+      (Edge { from: 4, to: 5 }, 3),
+      (Edge { from: 3, to: 6 }, 5),
+      (Edge { from: 6, to: 8 }, 4),
+      (Edge { from: 7, to: 2 }, 5),
+      (Edge { from: 2, to: 1 }, 5),
+      (Edge { from: 6, to: 2 }, 7),
+      (Edge { from: 4, to: 8 }, 5),
+      (Edge { from: 8, to: 1 }, 4),
+      (Edge { from: 3, to: 7 }, 4),
+      (Edge { from: 3, to: 4 }, 7),
+      (Edge { from: 7, to: 8 }, 6),
+      (Edge { from: 6, to: 5 }, 8),
+      (Edge { from: 5, to: 1 }, 3),
     ]);
   }
 
@@ -816,39 +818,39 @@ impl Graph
   {
     self.clear();
 
-    self.points = BTreeMap::<u8, Node>::from([
-      (1, Node::new(IVec2 { x: 959, y: 211 }, 1)),
-      (2, Node::new(IVec2 { x: 967, y: 394 }, 2)),
-      (3, Node::new(IVec2 { x: 946, y: 532 }, 3)),
-      (4, Node::new(IVec2 { x: 144, y: 377 }, 4)),
-      (5, Node::new(IVec2 { x: 775, y: 295 }, 5)),
-      (6, Node::new(IVec2 { x: 734, y: 523 }, 6)),
-      (7, Node::new(IVec2 { x: 559, y: 493 }, 7)),
-      (8, Node::new(IVec2 { x: 570, y: 361 }, 8)),
-      (9, Node::new(IVec2 { x: 569, y: 200 }, 9)),
-      (10, Node::new(IVec2 { x: 353, y: 206 }, 10)),
-      (11, Node::new(IVec2 { x: 355, y: 350 }, 11)),
-      (12, Node::new(IVec2 { x: 342, y: 488 }, 12)),
+    self.points = BTreeMap::<u8, DijkstraNode>::from([
+      (1, DijkstraNode::new(IVec2 { x: 959, y: 211 }, 1)),
+      (2, DijkstraNode::new(IVec2 { x: 967, y: 394 }, 2)),
+      (3, DijkstraNode::new(IVec2 { x: 946, y: 532 }, 3)),
+      (4, DijkstraNode::new(IVec2 { x: 144, y: 377 }, 4)),
+      (5, DijkstraNode::new(IVec2 { x: 775, y: 295 }, 5)),
+      (6, DijkstraNode::new(IVec2 { x: 734, y: 523 }, 6)),
+      (7, DijkstraNode::new(IVec2 { x: 559, y: 493 }, 7)),
+      (8, DijkstraNode::new(IVec2 { x: 570, y: 361 }, 8)),
+      (9, DijkstraNode::new(IVec2 { x: 569, y: 200 }, 9)),
+      (10, DijkstraNode::new(IVec2 { x: 353, y: 206 }, 10)),
+      (11, DijkstraNode::new(IVec2 { x: 355, y: 350 }, 11)),
+      (12, DijkstraNode::new(IVec2 { x: 342, y: 488 }, 12)),
     ]);
 
-    self.lines = HashMap::<Line, u16>::from([
-      (Line { from: 11, to: 7 }, 4),
-      (Line { from: 8, to: 2 }, 5),
-      (Line { from: 4, to: 10 }, 4),
-      (Line { from: 12, to: 7 }, 4),
-      (Line { from: 4, to: 12 }, 6),
-      (Line { from: 8, to: 6 }, 4),
-      (Line { from: 6, to: 3 }, 20),
-      (Line { from: 8, to: 5 }, 3),
-      (Line { from: 12, to: 8 }, 2),
-      (Line { from: 9, to: 5 }, 3),
-      (Line { from: 11, to: 8 }, 3),
-      (Line { from: 4, to: 11 }, 5),
-      (Line { from: 5, to: 1 }, 1),
-      (Line { from: 9, to: 1 }, 5),
-      (Line { from: 10, to: 9 }, 4),
-      (Line { from: 7, to: 6 }, 7),
-      (Line { from: 5, to: 2 }, 2),
+    self.lines = HashMap::<Edge, u16>::from([
+      (Edge { from: 11, to: 7 }, 4),
+      (Edge { from: 8, to: 2 }, 5),
+      (Edge { from: 4, to: 10 }, 4),
+      (Edge { from: 12, to: 7 }, 4),
+      (Edge { from: 4, to: 12 }, 6),
+      (Edge { from: 8, to: 6 }, 4),
+      (Edge { from: 6, to: 3 }, 20),
+      (Edge { from: 8, to: 5 }, 3),
+      (Edge { from: 12, to: 8 }, 2),
+      (Edge { from: 9, to: 5 }, 3),
+      (Edge { from: 11, to: 8 }, 3),
+      (Edge { from: 4, to: 11 }, 5),
+      (Edge { from: 5, to: 1 }, 1),
+      (Edge { from: 9, to: 1 }, 5),
+      (Edge { from: 10, to: 9 }, 4),
+      (Edge { from: 7, to: 6 }, 7),
+      (Edge { from: 5, to: 2 }, 2),
     ]);
   }
 
@@ -856,114 +858,94 @@ impl Graph
   {
     self.clear();
 
-    self.points = BTreeMap::<u8, Node>::from([
-      (1, Node::new(IVec2 { x: 595, y: 640 }, 1)),
-      (2, Node::new(IVec2 { x: 864, y: 300 }, 2)),
-      (3, Node::new(IVec2 { x: 550, y: 369 }, 3)),
-      (4, Node::new(IVec2 { x: 280, y: 606 }, 4)),
-      (5, Node::new(IVec2 { x: 748, y: 127 }, 5)),
-      (6, Node::new(IVec2 { x: 177, y: 71 }, 6)),
-      (7, Node::new(IVec2 { x: 467, y: 84 }, 7)),
-      (8, Node::new(IVec2 { x: 260, y: 431 }, 8)),
-      (9, Node::new(IVec2 { x: 928, y: 642 }, 9)),
-      (10, Node::new(IVec2 { x: 466, y: 181 }, 10)),
-      (11, Node::new(IVec2 { x: 433, y: 27 }, 11)),
-      (12, Node::new(IVec2 { x: 667, y: 52 }, 12)),
-      (13, Node::new(IVec2 { x: 847, y: 75 }, 13)),
-      (14, Node::new(IVec2 { x: 734, y: 270 }, 14)),
-      (15, Node::new(IVec2 { x: 931, y: 233 }, 15)),
-      (16, Node::new(IVec2 { x: 904, y: 389 }, 16)),
-      (17, Node::new(IVec2 { x: 423, y: 467 }, 17)),
-      (18, Node::new(IVec2 { x: 445, y: 551 }, 18)),
-      (19, Node::new(IVec2 { x: 691, y: 559 }, 19)),
+    self.points = BTreeMap::<u8, DijkstraNode>::from([
+      (1, DijkstraNode::new(Vec2 { x: 595, y: 640 }, 1)),
+      (2, DijkstraNode::new(Vec2 { x: 864, y: 300 }, 2)),
+      (3, DijkstraNode::new(Vec2 { x: 550, y: 369 }, 3)),
+      (4, DijkstraNode::new(Vec2 { x: 280, y: 606 }, 4)),
+      (5, DijkstraNode::new(Vec2 { x: 748, y: 127 }, 5)),
+      (6, DijkstraNode::new(Vec2 { x: 177, y: 71 }, 6)),
+      (7, DijkstraNode::new(Vec2 { x: 467, y: 84 }, 7)),
+      (8, DijkstraNode::new(Vec2 { x: 260, y: 431 }, 8)),
+      (9, DijkstraNode::new(Vec2 { x: 928, y: 642 }, 9)),
+      (10, DijkstraNode::new(Vec2 { x: 466, y: 181 }, 10)),
+      (11, DijkstraNode::new(Vec2 { x: 433, y: 27 }, 11)),
+      (12, DijkstraNode::new(Vec2 { x: 667, y: 52 }, 12)),
+      (13, DijkstraNode::new(Vec2 { x: 847, y: 75 }, 13)),
+      (14, DijkstraNode::new(Vec2 { x: 734, y: 270 }, 14)),
+      (15, DijkstraNode::new(Vec2 { x: 931, y: 233 }, 15)),
+      (16, DijkstraNode::new(Vec2 { x: 904, y: 389 }, 16)),
+      (17, DijkstraNode::new(Vec2 { x: 423, y: 467 }, 17)),
+      (18, DijkstraNode::new(Vec2 { x: 445, y: 551 }, 18)),
+      (19, DijkstraNode::new(Vec2 { x: 691, y: 559 }, 19)),
     ]);
 
-    self.lines = HashMap::<Line, u16>::from([
-      (Line { from: 12, to: 13 }, 1),
-      (Line { from: 6, to: 8 }, 12),
-      (Line { from: 14, to: 3 }, 1),
-      (Line { from: 16, to: 9 }, 10),
-      (Line { from: 15, to: 9 }, 14),
-      (Line { from: 2, to: 19 }, 9),
-      (Line { from: 18, to: 19 }, 3),
-      (Line { from: 17, to: 18 }, 2),
-      (Line { from: 8, to: 4 }, 1),
-      (Line { from: 1, to: 9 }, 1),
-      (Line { from: 7, to: 5 }, 1),
-      (Line { from: 16, to: 3 }, 2),
-      (Line { from: 3, to: 8 }, 1),
-      (Line { from: 3, to: 17 }, 3),
-      (Line { from: 15, to: 16 }, 1),
-      (Line { from: 5, to: 14 }, 3),
-      (Line { from: 10, to: 3 }, 8),
-      (Line { from: 13, to: 2 }, 2),
-      (Line { from: 12, to: 5 }, 2),
-      (Line { from: 11, to: 12 }, 1),
-      (Line { from: 6, to: 11 }, 2),
-      (Line { from: 10, to: 5 }, 3),
-      (Line { from: 5, to: 2 }, 1),
-      (Line { from: 16, to: 17 }, 5),
-      (Line { from: 6, to: 7 }, 1),
-      (Line { from: 18, to: 1 }, 1),
-      (Line { from: 6, to: 10 }, 2),
-      (Line { from: 2, to: 3 }, 1),
-      (Line { from: 19, to: 9 }, 4),
-      (Line { from: 17, to: 4 }, 2),
-      (Line { from: 13, to: 15 }, 1),
-      (Line { from: 4, to: 1 }, 1),
+    self.lines = HashMap::<Edge, u16>::from([
+      (Edge { from: 12, to: 13 }, 1),
+      (Edge { from: 6, to: 8 }, 12),
+      (Edge { from: 14, to: 3 }, 1),
+      (Edge { from: 16, to: 9 }, 10),
+      (Edge { from: 15, to: 9 }, 14),
+      (Edge { from: 2, to: 19 }, 9),
+      (Edge { from: 18, to: 19 }, 3),
+      (Edge { from: 17, to: 18 }, 2),
+      (Edge { from: 8, to: 4 }, 1),
+      (Edge { from: 1, to: 9 }, 1),
+      (Edge { from: 7, to: 5 }, 1),
+      (Edge { from: 16, to: 3 }, 2),
+      (Edge { from: 3, to: 8 }, 1),
+      (Edge { from: 3, to: 17 }, 3),
+      (Edge { from: 15, to: 16 }, 1),
+      (Edge { from: 5, to: 14 }, 3),
+      (Edge { from: 10, to: 3 }, 8),
+      (Edge { from: 13, to: 2 }, 2),
+      (Edge { from: 12, to: 5 }, 2),
+      (Edge { from: 11, to: 12 }, 1),
+      (Edge { from: 6, to: 11 }, 2),
+      (Edge { from: 10, to: 5 }, 3),
+      (Edge { from: 5, to: 2 }, 1),
+      (Edge { from: 16, to: 17 }, 5),
+      (Edge { from: 6, to: 7 }, 1),
+      (Edge { from: 18, to: 1 }, 1),
+      (Edge { from: 6, to: 10 }, 2),
+      (Edge { from: 2, to: 3 }, 1),
+      (Edge { from: 19, to: 9 }, 4),
+      (Edge { from: 17, to: 4 }, 2),
+      (Edge { from: 13, to: 15 }, 1),
+      (Edge { from: 4, to: 1 }, 1),
     ]);
   }
 }
 
-/// ### The line struct
-///
-/// It contains two ids: one is the source and the other is the target of the line
-#[derive(Hash)]
-struct Line
-{
-  from: u8,
-  to: u8,
-}
-
-impl PartialEq for Line
+impl PartialEq for Edge
 {
   fn eq(&self, other: &Self) -> bool
   { return self.from == other.from && self.to == other.to; }
 }
 
-impl Eq for Line {}
+impl Eq for Edge {}
 
-impl Display for Line
+impl Display for Edge
 {
   fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
   { return write!(formatter, "({}, {})", self.from, self.to); }
 }
 
-/// ### The Node struct
-///
-/// It contains additional fields needed for dijkstra's shortest path algorithm
-#[derive(Debug, Clone, Copy)]
-struct Node
+impl DijkstraNode
 {
-  position: IVec2,
-  visited: bool,
-  parent: u8,
-  distance: u32,
-}
-
-impl Node
-{
-  pub fn new(position: IVec2, parent: u8) -> Self
+  fn new(x: f32, y: f32) -> Self
   {
-    return Node
+    DijkstraNode
     {
-      position,
+      position: Vec2 { x, y },
+      parent: None,
+      distance: None,
       visited: false,
-      parent,
-      distance: u32::MAX,
-    };
+      edges: vec![]
+    }
   }
 }
+
 
 // Tests
 
