@@ -12,6 +12,10 @@ use std::{
 
 use crate::utils;
 
+// TODO: add iterator over points
+// TODO: add iterator bfs
+// TODO: add iterator dfs
+// TODO: consider using a Vec<u8> to store the points
 // TODO: Extract painting the graph thru macroquad to a different module
 // TODO: Some fields in this struct might be better stored in the main module
 /// ### Graph
