@@ -1,11 +1,11 @@
-use crate::{graph::ShortestPathGraph, utils::Mode};
+use crate::{graph::DijkstraGraph, utils::Mode};
 use egui_macroquad::{
   egui::{epaint::Shadow, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window},
   ui,
 };
 use macroquad::time::get_fps;
 
-pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut ShortestPathGraph, mut bg_color: &mut [f32; 3]) {
+pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color: &mut [f32; 3]) {
   ui(|egui_context| {
     // Disabling all shadows
     egui_context.set_visuals(Visuals {
@@ -84,7 +84,7 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut ShortestPathGraph, mut bg_co
           ui.label("Add in a pre-made graph:");
           ui.horizontal(|ui| {
             if ui.button("Small").clicked() {
-              graph.insert_small_graph();
+              graph.insert_small_graph_a();
             }
             if ui.button("Medium").clicked() {
               graph.insert_medium_graph();

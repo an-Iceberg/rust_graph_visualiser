@@ -24,20 +24,22 @@ fn window_configuration() -> Conf
 #[macroquad::main(window_configuration)]
 async fn main()
 {
-  let mut graph = ShortestPathGraph::new();
+  let mut graph = DijkstraGraph::new();
   let mut path: Option<Vec<u8>> = None;
-  let mut start: Option<usize> = None;
-  let mut end: Option<usize> = None;
+  // let mut start: Option<usize> = None;
+  // let mut end: Option<usize> = None;
+  // This is the id of the point that the mouse is currently hovering over
   let mut hovered_point_id: Option<usize> = None;
+  // This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   let mut selected_point_id: Option<usize> = None;
 
-  let ui_width = 200;
+  let ui_width = 200_f32;
   let mut mode = Mode::Move;
 
-  let mut padding: u8 = 3;
-  let mut angle: f32 = 0.436;
-  let mut arrow_head_length: f32 = 20;
-  let mut radius = 13_u8;
+  let mut padding = 3_u8;
+  let mut angle = 0.436_f32;
+  let mut arrow_head_length = 20_f32;
+  let mut radius = 13_f32;
   let mut line_length = 1_u16;
   let mut path_thickness = 2_f32;
   let mut base_point = 15_f32;
@@ -57,12 +59,12 @@ async fn main()
 
     // --- INPUT ---
     if utils::is_point_in_rectangle(
-      mouse_position().0 as i32,
-      mouse_position().1 as i32,
-      graph.get_radius() as i32,
-      graph.get_radius() as i32,
-      screen_width() as i32 - (ui_width + (3 * graph.get_radius() as i32)),
-      screen_height() as i32 - (2 * graph.get_radius() as i32),
+      mouse_position().0,
+      mouse_position().1,
+      radius,
+      radius,
+      screen_width() - (ui_width + (3_f32 * radius)),
+      screen_height() - (2_f32 * radius),
     )
     { utils::handle_mouse_input(&mode, &mut graph); }
 
