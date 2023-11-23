@@ -1,12 +1,5 @@
 use super::DijkstraGraph;
-use super::DijkstraNode;
-use crate::graph::Edge;
-use macroquad::prelude::IVec2;
 use rand::*;
-use std::{
-  collections::{BTreeMap, HashMap},
-  ops::Mul,
-};
 
 const RADIUS: f32 = 13_f32;
 
@@ -27,74 +20,35 @@ fn generate_random_points_graph(amount_of_points: u8) -> DijkstraGraph
 #[test]
 fn add_some_points()
 {
-  // Creating a graph
-  let mut is_graph = DijkstraGraph::new();
-  for _i in 1..=3 {
-    is_graph.add_point(vec2_random_coordinates(
-      is_graph.radius.into(),
-    ));
-  }
-
-  // Creating the values it should have
-  let mut should_ids: Vec<u8> = Vec::new();
-  for id in 1..=3 { should_ids.push(id); }
-
-  // Comparing the two for equality
-  for (is_id, should_id) in is_graph.points.keys().zip(should_ids.iter())
-  { assert_eq!(*is_id, *should_id); }
+  let mut graph = generate_random_points_graph(3);
+  assert_eq!(graph.size(), 3);
 }
 
 #[test]
 fn add_many_points()
 {
-  // Creating the graph
-  let mut is_graph = DijkstraGraph::new();
-  for _i in 1..=50 {
-    is_graph.add_point(vec2_random_coordinates(is_graph.get_radius().into()))
-  }
-
-  // Creating the data that should be in the graph
-  let mut should_ids: Vec<u8> = Vec::new();
-  for id in 1..=50 { should_ids.push(id); }
-
-  // Comparing for equality
-  for (is_id, should_id) in is_graph.points.keys().zip(should_ids.iter())
-  { assert_eq!(*is_id, *should_id); }
+  let mut graph = generate_random_points_graph(50);
+  assert_eq!(graph.size(), 50);
 }
 
 #[test]
 fn max_amount_of_points()
 {
   // Creating graph and "adding" 1_000 points to it
-  let mut is_graph = DijkstraGraph::new();
-  for _i in 0..1_000 {
-    is_graph.add_point(vec2_random_coordinates(
-      is_graph.radius.into(),
-    ));
-  }
-
+  let mut graph = generate_random_points_graph(1_000);
   // The graph should still only have 100 points
-  assert_eq!(is_graph.points.len(),100);
+  assert_eq!(graph.size(), 101);
 }
 
 #[test]
 fn remove_points()
 {
   // Creating a graph
-  let mut is_graph = generate_random_points_graph(10);
-
+  let mut graph = generate_random_points_graph(10);
   // Removing every second point
-  for id in 1..=5
-  { is_graph.remove_point(id * 2); }
-
-  // Creating the ids the resulting graph should have
-  let mut should_ids: Vec<u8> = Vec::new();
-  for id in 1..=5
-  { should_ids.push(id.mul(2 as u8) - 1); }
-
-  // Comparing for equality
-  for (is_id, should_id) in is_graph.points.keys().zip(should_ids.iter())
-  { assert_eq!(*is_id, *should_id); }
+  for id in 0..=4
+  { graph.remove_point(id * 2); }
+  assert_eq!(graph.size(), 5);
 }
 
 #[test]
@@ -103,12 +57,11 @@ fn shortest_path_small()
   // First case
   {
     let mut graph = DijkstraGraph::new();
-    graph.insert_small_graph_a();
-    assert!(graph.find_shortest_path(3, 1));
+    graph.insert_small_graph();
+    assert!(graph.find_shortest_path(2, 0));
 
-    // Shortest paths are either [3, 4, 5, 1] or [3, 6, 8, 1]
-    let should_path_1: Vec<u8> = vec![3, 4, 5, 1];
-    let should_path_2: Vec<u8> = vec![3, 6, 8, 1];
+    let should_path_1 = vec![2, 3, 4, 0];
+    let should_path_2 = vec![2, 5, 7, 0];
 
     match graph.get_path()
     {
@@ -126,56 +79,50 @@ fn shortest_path_small()
 
   // Second case
   {
-    let mut graph = DijkstraGraph {
-      points: BTreeMap::<u8, DijkstraNode>::from([
-        (1, DijkstraNode::new(IVec2 { x: 783, y: 102 }, 1)),
-        (2, DijkstraNode::new(IVec2 { x: 412, y: 295 }, 2)),
-        (3, DijkstraNode::new(IVec2 { x: 680, y: 308 }, 3)),
-        (4, DijkstraNode::new(IVec2 { x: 509, y: 459 }, 4)),
-        (5, DijkstraNode::new(IVec2 { x: 330, y: 603 }, 5)),
-        (6, DijkstraNode::new(IVec2 { x: 160, y: 442 }, 6)),
-        (7, DijkstraNode::new(IVec2 { x: 174, y: 196 }, 7)),
-        (8, DijkstraNode::new(IVec2 { x: 411, y: 78 }, 8)),
-        (9, DijkstraNode::new(IVec2 { x: 1003, y: 239 }, 9)),
-      ]),
-      lines: HashMap::<Edge, u16>::from([
-        (Edge { from: 4, to: 5 }, 2),
-        (Edge { from: 3, to: 4 }, 3),
-        (Edge { from: 2, to: 6 }, 3),
-        (Edge { from: 1, to: 9 }, 7),
-        (Edge { from: 4, to: 2 }, 1),
-        (Edge { from: 9, to: 3 }, 1),
-        (Edge { from: 6, to: 2 }, 3),
-        (Edge { from: 7, to: 8 }, 2),
-        (Edge { from: 2, to: 4 }, 1),
-        (Edge { from: 2, to: 8 }, 3),
-        (Edge { from: 2, to: 7 }, 5),
-        (Edge { from: 2, to: 1 }, 1),
-        (Edge { from: 5, to: 6 }, 2),
-        (Edge { from: 1, to: 2 }, 1),
-        (Edge { from: 3, to: 9 }, 1),
-        (Edge { from: 4, to: 3 }, 3),
-        (Edge { from: 1, to: 8 }, 1),
-        (Edge { from: 8, to: 1 }, 1),
-        (Edge { from: 6, to: 7 }, 2),
-        (Edge { from: 8, to: 7 }, 2),
-        (Edge { from: 8, to: 2 }, 3),
-        (Edge { from: 2, to: 3 }, 1),
-        (Edge { from: 7, to: 2 }, 5),
-        (Edge { from: 9, to: 1 }, 7),
-        (Edge { from: 3, to: 2 }, 1),
-        (Edge { from: 5, to: 4 }, 2),
-        (Edge { from: 6, to: 5 }, 2),
-        (Edge { from: 7, to: 6 }, 2),
-      ]),
-      start: Some(7),
-      end: Some(9),
-      ..DijkstraGraph::default()
-    };
+    let mut graph = DijkstraGraph::new();
 
-    let should_path = vec![7, 8, 1, 2, 3, 9];
+    graph.append_point(783_f32, 102_f32);
+    graph.append_point(412_f32, 295_f32);
+    graph.append_point(680_f32, 308_f32);
+    graph.append_point(509_f32, 459_f32);
+    graph.append_point(330_f32, 603_f32);
+    graph.append_point(160_f32, 442_f32);
+    graph.append_point(174_f32, 196_f32);
+    graph.append_point(411_f32, 78_f32);
+    graph.append_point(1003_f32, 239_f32);
 
-    assert!(graph.find_shortest_path(7, 9));
+    graph.add_line(3, 4, 2);
+    graph.add_line(2, 3, 3);
+    graph.add_line(1, 5, 3);
+    graph.add_line(0, 8, 7);
+    graph.add_line(3, 1, 1);
+    graph.add_line(8, 2, 1);
+    graph.add_line(5, 1, 3);
+    graph.add_line(6, 7, 2);
+    graph.add_line(1, 3, 1);
+    graph.add_line(1, 7, 3);
+    graph.add_line(1, 6, 5);
+    graph.add_line(1, 0, 1);
+    graph.add_line(4, 5, 2);
+    graph.add_line(0, 1, 1);
+    graph.add_line(2, 8, 1);
+    graph.add_line(3, 2, 3);
+    graph.add_line(0, 7, 1);
+    graph.add_line(7, 0, 1);
+    graph.add_line(5, 6, 2);
+    graph.add_line(7, 6, 2);
+    graph.add_line(7, 1, 3);
+    graph.add_line(1, 2, 1);
+    graph.add_line(6, 1, 5);
+    graph.add_line(8, 0, 7);
+    graph.add_line(2, 1, 1);
+    graph.add_line(4, 3, 2);
+    graph.add_line(5, 4, 2);
+    graph.add_line(6, 5, 2);
+
+    let should_path = vec![6, 7, 0, 1, 2, 8];
+
+    assert!(graph.find_shortest_path(6, 8));
 
     match graph.get_path()
     {
@@ -199,13 +146,13 @@ fn shortest_path_medium()
 
   // First end
   {
-    let should_path_1: Vec<u8> = vec![4, 10, 9, 5, 1];
-    let should_path_2: Vec<u8> = vec![4, 11, 8, 5, 1];
-    let should_path_3: Vec<u8> = vec![4, 12, 9, 5, 1];
+    let should_path_1 = vec![3, 9, 8, 4, 0];
+    let should_path_2 = vec![3, 10, 7, 4, 0];
+    let should_path_3 = vec![3, 11, 8, 4, 0];
 
-    graph.find_shortest_path(4, 1);
+    graph.find_shortest_path(3, 0);
 
-    match graph.path
+    match graph.get_path()
     {
       Some(ref path) =>
       {
@@ -222,18 +169,19 @@ fn shortest_path_medium()
 
   // Second end
   {
-    let should_path_1: Vec<u8> = vec![4, 10, 9, 5, 2];
-    let should_path_2: Vec<u8> = vec![4, 11, 8, 5, 2];
-    let should_path_3: Vec<u8> = vec![4, 11, 8, 2];
-    let should_path_4: Vec<u8> = vec![4, 12, 8, 5, 2];
-    let should_path_5: Vec<u8> = vec![4, 12, 8, 2];
+    let should_path_1 = vec![3, 9, 8, 4, 1];
+    let should_path_2 = vec![3, 10, 7, 4, 1];
+    let should_path_3 = vec![3, 10, 7, 1];
+    let should_path_4 = vec![3, 11, 7, 4, 1];
+    let should_path_5 = vec![3, 11, 7, 1];
 
-    graph.find_shortest_path(4, 2);
+    graph.find_shortest_path(3, 1);
 
-    match graph.path {
-      Some(ref path) => {
-        path
-          .iter()
+    match graph.get_path()
+    {
+      Some(ref path) =>
+      {
+        path.iter()
           .zip(should_path_1.iter())
           .zip(should_path_2.iter())
           .zip(should_path_3.iter())
@@ -255,12 +203,12 @@ fn shortest_path_medium()
 
   // Third end
   {
-    let should_path_1: Vec<u8> = vec![4, 11, 8, 6, 3];
-    let should_path_2: Vec<u8> = vec![4, 12, 8, 6, 3];
+    let should_path_1 = vec![3, 10, 7, 5, 2];
+    let should_path_2 = vec![3, 11, 7, 5, 2];
 
-    graph.find_shortest_path(4, 3);
+    graph.find_shortest_path(3, 2);
 
-    match graph.path
+    match graph.get_path()
     {
       Some(ref path) =>
       {
@@ -275,16 +223,18 @@ fn shortest_path_medium()
   }
 }
 
+// TODO: decrease all indices in add_line by 1
 #[test]
 fn shortest_path_large()
 {
   let mut graph = DijkstraGraph::new();
+  graph.insert_large_graph();
 
-  let should_path = vec![6, 7, 5, 2, 3, 8, 4, 1, 9];
+  let should_path = vec![5, 6, 4, 1, 2, 7, 3, 0, 8];
 
-  graph.find_shortest_path(6, 9);
+  graph.find_shortest_path(5, 8);
 
-  match graph.path
+  match graph.get_path()
   {
     Some(path) =>
     {
@@ -298,50 +248,45 @@ fn shortest_path_large()
 }
 
 #[test]
-fn start_and_end_are_within_graph() {
-  let mut graph = DijkstraGraph {
-    points: BTreeMap::<u8, DijkstraNode>::from([
-      (1, DijkstraNode::new(IVec2 { x: 970, y: 108 }, 1)),
-      (2, DijkstraNode::new(IVec2 { x: 991, y: 340 }, 2)),
-      (3, DijkstraNode::new(IVec2 { x: 1023, y: 580 }, 3)),
-      (4, DijkstraNode::new(IVec2 { x: 509, y: 459 }, 4)),
-      (5, DijkstraNode::new(IVec2 { x: 750, y: 537 }, 5)),
-      (6, DijkstraNode::new(IVec2 { x: 747, y: 262 }, 6)),
-      (7, DijkstraNode::new(IVec2 { x: 535, y: 237 }, 7)),
-      (8, DijkstraNode::new(IVec2 { x: 497, y: 433 }, 8)),
-      (9, DijkstraNode::new(IVec2 { x: 352, y: 379 }, 9)),
-      (10, DijkstraNode::new(IVec2 { x: 308, y: 266 }, 10)),
-      (16, DijkstraNode::new(IVec2 { x: 163, y: 205 }, 11)),
-      (17, DijkstraNode::new(IVec2 { x: 149, y: 346 }, 12)),
-      (18, DijkstraNode::new(IVec2 { x: 620, y: 550 }, 13)),
-    ]),
-    lines: HashMap::<Edge, u16>::from([
-      (Edge { from: 5, to: 4 }, 2),
-      (Edge { from: 18, to: 5 }, 7),
-      (Edge { from: 6, to: 1 }, 6),
-      (Edge { from: 8, to: 18 }, 6),
-      (Edge { from: 9, to: 8 }, 8),
-      (Edge { from: 4, to: 2 }, 5),
-      (Edge { from: 6, to: 4 }, 9),
-      (Edge { from: 4, to: 3 }, 4),
-      (Edge { from: 17, to: 10 }, 8),
-      (Edge { from: 10, to: 7 }, 12),
-      (Edge { from: 16, to: 10 }, 7),
-      (Edge { from: 8, to: 6 }, 4),
-      (Edge { from: 10, to: 9 }, 11),
-      (Edge { from: 17, to: 9 }, 4),
-      (Edge { from: 7, to: 6 }, 5),
-    ]),
-    start: Some(10),
-    end: Some(4),
-    ..DijkstraGraph::default()
-  };
+fn start_and_end_are_within_graph()
+{
+  let mut graph = DijkstraGraph::new();
+
+  graph.add_point(1, 970_f32, 108_f32);
+  graph.add_point(2, 991_f32, 340_f32);
+  graph.add_point(3, 1023_f32, 580_f32);
+  graph.add_point(4, 509_f32, 459_f32);
+  graph.add_point(5, 750_f32, 537_f32);
+  graph.add_point(6, 747_f32, 262_f32);
+  graph.add_point(7, 535_f32, 237_f32);
+  graph.add_point(8, 497_f32, 433_f32);
+  graph.add_point(9, 352_f32, 379_f32);
+  graph.add_point(10, 308_f32, 266_f32);
+  graph.add_point(16, 163_f32, 205_f32);
+  graph.add_point(17, 149_f32, 346_f32);
+  graph.add_point(18, 620_f32, 550_f32);
+
+  graph.add_line(5, 4, 2);
+  graph.add_line(18, 5, 7);
+  graph.add_line(6, 1, 6);
+  graph.add_line(8, 18, 6);
+  graph.add_line(9, 8, 8);
+  graph.add_line(4, 2, 5);
+  graph.add_line(6, 4, 9);
+  graph.add_line(4, 3, 4);
+  graph.add_line(17, 10, 8);
+  graph.add_line(10, 7, 12);
+  graph.add_line(16, 10, 7);
+  graph.add_line(8, 6, 4);
+  graph.add_line(10, 9, 11);
+  graph.add_line(17, 9, 4);
+  graph.add_line(7, 6, 5);
 
   let should_path = vec![10, 7, 6, 4];
 
   graph.find_shortest_path(10, 4);
 
-  match graph.path
+  match graph.get_path()
   {
     Some(path) =>
     {
@@ -358,85 +303,77 @@ fn start_and_end_are_within_graph() {
 fn no_possible_path()
 {
   let mut graph = DijkstraGraph::new();
-  graph.insert_small_graph_a();
+  graph.insert_small_graph();
 
-  assert!(!graph.find_shortest_path(1, 3));
+  assert!(!graph.find_shortest_path(0, 2));
   assert!(graph.get_path().is_none());
 }
 
 #[test]
 fn disconnected_graph()
 {
-  let mut graph = DijkstraGraph {
-    points: BTreeMap::<u8, DijkstraNode>::from([
-      (1, DijkstraNode::new(IVec2 { x: 888, y: 135 }, 1)),
-      (2, DijkstraNode::new(IVec2 { x: 595, y: 138 }, 2)),
-      (3, DijkstraNode::new(IVec2 { x: 267, y: 120 }, 3)),
-      (4, DijkstraNode::new(IVec2 { x: 230, y: 347 }, 4)),
-      (5, DijkstraNode::new(IVec2 { x: 553, y: 379 }, 5)),
-      (6, DijkstraNode::new(IVec2 { x: 905, y: 390 }, 6)),
-      (7, DijkstraNode::new(IVec2 { x: 895, y: 649 }, 7)),
-      (8, DijkstraNode::new(IVec2 { x: 479, y: 634 }, 8)),
-      (9, DijkstraNode::new(IVec2 { x: 187, y: 607 }, 9)),
-    ]),
-    lines: HashMap::<Edge, u16>::from([
-      (Edge { from: 9, to: 8 }, 20),
-      (Edge { from: 3, to: 2 }, 20),
-      (Edge { from: 1, to: 6 }, 20),
-      (Edge { from: 6, to: 7 }, 20),
-      (Edge { from: 3, to: 4 }, 20),
-      (Edge { from: 8, to: 7 }, 20),
-      (Edge { from: 3, to: 5 }, 20),
-    ]),
-    start: Some(3),
-    end: Some(1),
-    ..DijkstraGraph::default()
-  };
-  graph.find_shortest_path(3, 7);
+  let mut graph = DijkstraGraph::new();
 
-  assert!(graph.path.is_none());
+  graph.append_point(888_f32, 135_f32);
+  graph.append_point(595_f32, 138_f32);
+  graph.append_point(267_f32, 120_f32);
+  graph.append_point(230_f32, 347_f32);
+  graph.append_point(553_f32, 379_f32);
+  graph.append_point(905_f32, 390_f32);
+  graph.append_point(895_f32, 649_f32);
+  graph.append_point(479_f32, 634_f32);
+  graph.append_point(187_f32, 607_f32);
+
+  graph.add_line(8, 7, 20);
+  graph.add_line(2, 1, 20);
+  graph.add_line(0, 5, 20);
+  graph.add_line(5, 6, 20);
+  graph.add_line(2, 3, 20);
+  graph.add_line(7, 6, 20);
+  graph.add_line(2, 4, 20);
+
+  graph.find_shortest_path(2, 0);
+
+  assert!(graph.get_path().is_none());
 }
 
+// TODO: decrease all indices in add_line by 1
 #[test]
 fn cyclical_valid_path()
 {
-  let mut graph = DijkstraGraph {
-    points: BTreeMap::<u8, DijkstraNode>::from([
-      (1, DijkstraNode::new(IVec2 { x: 899, y: 490 }, 1)),
-      (2, DijkstraNode::new(IVec2 { x: 941, y: 618 }, 2)),
-      (3, DijkstraNode::new(IVec2 { x: 710, y: 621 }, 3)),
-      (4, DijkstraNode::new(IVec2 { x: 777, y: 390 }, 4)),
-      (5, DijkstraNode::new(IVec2 { x: 698, y: 200 }, 5)),
-      (6, DijkstraNode::new(IVec2 { x: 497, y: 185 }, 6)),
-      (7, DijkstraNode::new(IVec2 { x: 379, y: 367 }, 7)),
-      (8, DijkstraNode::new(IVec2 { x: 556, y: 541 }, 8)),
-      (9, DijkstraNode::new(IVec2 { x: 403, y: 574 }, 9)),
-      (10, DijkstraNode::new(IVec2 { x: 207, y: 434 }, 10)),
-      (11, DijkstraNode::new(IVec2 { x: 238, y: 257 }, 11)),
-      (12, DijkstraNode::new(IVec2 { x: 554, y: 41 }, 12)),
-    ]),
-    lines: HashMap::<Edge, u16>::from([
-      (Edge { from: 7, to: 11 }, 1),
-      (Edge { from: 6, to: 12 }, 1),
-      (Edge { from: 7, to: 6 }, 1),
-      (Edge { from: 5, to: 4 }, 1),
-      (Edge { from: 6, to: 5 }, 1),
-      (Edge { from: 8, to: 7 }, 1),
-      (Edge { from: 4, to: 8 }, 1),
-      (Edge { from: 4, to: 1 }, 1),
-      (Edge { from: 8, to: 3 }, 1),
-      (Edge { from: 7, to: 10 }, 1),
-      (Edge { from: 1, to: 2 }, 1),
-      (Edge { from: 8, to: 9 }, 1),
-    ]),
-    ..DijkstraGraph::default()
-  };
+  let mut graph = DijkstraGraph::new();
 
-  let should_path = vec![4, 8, 7, 6, 5];
+  graph.append_point(899_f32, 490_f32);
+  graph.append_point(941_f32, 618_f32);
+  graph.append_point(710_f32, 621_f32);
+  graph.append_point(777_f32, 390_f32);
+  graph.append_point(698_f32, 200_f32);
+  graph.append_point(497_f32, 185_f32);
+  graph.append_point(379_f32, 367_f32);
+  graph.append_point(556_f32, 541_f32);
+  graph.append_point(403_f32, 574_f32);
+  graph.append_point(207_f32, 434_f32);
+  graph.append_point(238_f32, 257_f32);
+  graph.append_point(554_f32, 41_f32);
 
-  graph.find_shortest_path(4, 5);
+  graph.add_line(6, 10, 1);
+  graph.add_line(5, 11, 1);
+  graph.add_line(6, 5, 1);
+  graph.add_line(4, 3, 1);
+  graph.add_line(5, 4, 1);
+  graph.add_line(7, 6, 1);
+  graph.add_line(3, 7, 1);
+  graph.add_line(3, 0, 1);
+  graph.add_line(7, 2, 1);
+  graph.add_line(6, 9, 1);
+  graph.add_line(0, 1, 1);
+  graph.add_line(7, 8, 1);
 
-  match graph.path
+  let should_path = vec![3, 7, 6, 5, 4];
+
+  graph.find_shortest_path(3, 4);
+
+  match graph.get_path()
   {
     Some(path) =>
     {

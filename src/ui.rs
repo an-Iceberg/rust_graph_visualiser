@@ -84,7 +84,7 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
           ui.label("Add in a pre-made graph:");
           ui.horizontal(|ui| {
             if ui.button("Small").clicked() {
-              graph.insert_small_graph_a();
+              graph.insert_small_graph();
             }
             if ui.button("Medium").clicked() {
               graph.insert_medium_graph();

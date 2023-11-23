@@ -4,11 +4,9 @@ use crate::utils;
 // TODO: add iterator bfs
 // TODO: add iterator dfs
 // TODO: consider using a Vec<u8> to store the points
-// TODO: Extract painting the graph thru macroquad to a different module
-// TODO: Some fields in this struct might be better stored in the main module
-/// ### Graph
+/// ### Dijkstra Graph
 ///
-/// It contains nodes and edges connecting those nodes.
+/// Data is stored in an adjacency list as an array.
 pub(crate) struct DijkstraGraph
 {
   /// The actual graph data is stored here.
@@ -257,85 +255,32 @@ impl DijkstraGraph
   }
 
   /// Replaces the current graph with a small one
-  pub fn insert_small_graph_a(&mut self)
+  pub fn insert_small_graph(&mut self)
   {
     self.clear();
 
-    self.add_point(1, 942_f32, 355_f32);
-    self.add_point(2, 720_f32, 208_f32);
-    self.add_point(3, 198_f32, 342_f32);
-    self.add_point(4, 463_f32, 507_f32);
-    self.add_point(5, 735_f32, 513_f32);
-    self.add_point(6, 458_f32, 346_f32);
-    self.add_point(7, 468_f32, 202_f32);
-    self.add_point(8, 721_f32, 360_f32);
+    self.append_point(942_f32, 355_f32);
+    self.append_point(720_f32, 208_f32);
+    self.append_point(198_f32, 342_f32);
+    self.append_point(463_f32, 507_f32);
+    self.append_point(735_f32, 513_f32);
+    self.append_point(458_f32, 346_f32);
+    self.append_point(468_f32, 202_f32);
+    self.append_point(721_f32, 360_f32);
 
-    self.add_line(4, 5, 3);
-    self.add_line(3, 6, 5);
-    self.add_line(6, 8, 4);
-    self.add_line(7, 2, 5);
-    self.add_line(2, 1, 5);
-    self.add_line(6, 2, 7);
-    self.add_line(4, 8, 5);
-    self.add_line(8, 1, 4);
-    self.add_line(3, 7, 4);
-    self.add_line(3, 4, 7);
-    self.add_line(7, 8, 6);
-    self.add_line(6, 5, 8);
-    self.add_line(5, 1, 3);
-  }
-
-  /// Replaces the current graph with a small one
-  pub fn insert_small_graph_b(&mut self)
-  {
-    self.clear();
-
-    let mut graph = DijkstraGraph {
-      points: BTreeMap::<u8, DijkstraNode>::from([
-        (1, DijkstraNode::new(IVec2 { x: 783, y: 102 }, 1)),
-        (2, DijkstraNode::new(IVec2 { x: 412, y: 295 }, 2)),
-        (3, DijkstraNode::new(IVec2 { x: 680, y: 308 }, 3)),
-        (4, DijkstraNode::new(IVec2 { x: 509, y: 459 }, 4)),
-        (5, DijkstraNode::new(IVec2 { x: 330, y: 603 }, 5)),
-        (6, DijkstraNode::new(IVec2 { x: 160, y: 442 }, 6)),
-        (7, DijkstraNode::new(IVec2 { x: 174, y: 196 }, 7)),
-        (8, DijkstraNode::new(IVec2 { x: 411, y: 78 }, 8)),
-        (9, DijkstraNode::new(IVec2 { x: 1003, y: 239 }, 9)),
-      ]),
-      lines: HashMap::<Edge, u16>::from([
-        (Edge { from: 4, to: 5 }, 2),
-        (Edge { from: 3, to: 4 }, 3),
-        (Edge { from: 2, to: 6 }, 3),
-        (Edge { from: 1, to: 9 }, 7),
-        (Edge { from: 4, to: 2 }, 1),
-        (Edge { from: 9, to: 3 }, 1),
-        (Edge { from: 6, to: 2 }, 3),
-        (Edge { from: 7, to: 8 }, 2),
-        (Edge { from: 2, to: 4 }, 1),
-        (Edge { from: 2, to: 8 }, 3),
-        (Edge { from: 2, to: 7 }, 5),
-        (Edge { from: 2, to: 1 }, 1),
-        (Edge { from: 5, to: 6 }, 2),
-        (Edge { from: 1, to: 2 }, 1),
-        (Edge { from: 3, to: 9 }, 1),
-        (Edge { from: 4, to: 3 }, 3),
-        (Edge { from: 1, to: 8 }, 1),
-        (Edge { from: 8, to: 1 }, 1),
-        (Edge { from: 6, to: 7 }, 2),
-        (Edge { from: 8, to: 7 }, 2),
-        (Edge { from: 8, to: 2 }, 3),
-        (Edge { from: 2, to: 3 }, 1),
-        (Edge { from: 7, to: 2 }, 5),
-        (Edge { from: 9, to: 1 }, 7),
-        (Edge { from: 3, to: 2 }, 1),
-        (Edge { from: 5, to: 4 }, 2),
-        (Edge { from: 6, to: 5 }, 2),
-        (Edge { from: 7, to: 6 }, 2),
-      ]),
-      start: Some(7),
-      end: Some(9),
-      ..DijkstraGraph::default()
-    };
+    self.add_line(3, 4, 3);
+    self.add_line(2, 5, 5);
+    self.add_line(5, 7, 4);
+    self.add_line(6, 1, 5);
+    self.add_line(1, 0, 5);
+    self.add_line(5, 1, 7);
+    self.add_line(3, 7, 5);
+    self.add_line(7, 0, 4);
+    self.add_line(2, 6, 4);
+    self.add_line(2, 3, 7);
+    self.add_line(6, 7, 6);
+    self.add_line(5, 4, 8);
+    self.add_line(4, 0, 3);
   }
 
   /// Replaces the current graph with a medium-sized one
@@ -343,137 +288,94 @@ impl DijkstraGraph
   {
     self.clear();
 
-    self.add_point(1, 959_f32, 211_f32);
-    self.add_point(2, 967_f32, 394_f32);
-    self.add_point(3, 946_f32, 532_f32);
-    self.add_point(4, 144_f32, 377_f32);
-    self.add_point(5, 775_f32, 295_f32);
-    self.add_point(6, 734_f32, 523_f32);
-    self.add_point(7, 559_f32, 493_f32);
-    self.add_point(8, 570_f32, 361_f32);
-    self.add_point(9, 569_f32, 200_f32);
-    self.add_point(10, 353_f32, 206_f32);
-    self.add_point(11, 355_f32, 350_f32);
-    self.add_point(12, 342_f32, 488_f32);
+    self.append_point(959_f32, 211_f32);
+    self.append_point(967_f32, 394_f32);
+    self.append_point(946_f32, 532_f32);
+    self.append_point(144_f32, 377_f32);
+    self.append_point(775_f32, 295_f32);
+    self.append_point(734_f32, 523_f32);
+    self.append_point(559_f32, 493_f32);
+    self.append_point(570_f32, 361_f32);
+    self.append_point(569_f32, 200_f32);
+    self.append_point(353_f32, 206_f32);
+    self.append_point(355_f32, 350_f32);
+    self.append_point(342_f32, 488_f32);
 
-    self.add_line(11, 7, 4);
-    self.add_line(8, 2, 5);
-    self.add_line(4, 10, 4);
-    self.add_line(12, 7, 4);
-    self.add_line(4, 12, 6);
-    self.add_line(6, 3, 20);
-    self.add_line(8, 5, 3);
-    self.add_line(12, 8, 3);
-    self.add_line(9, 5, 3);
-    self.add_line(11, 8, 3);
-    self.add_line(4, 11, 5);
-    self.add_line(5, 1, 1);
-    self.add_line(9, 1, 5);
-    self.add_line(10, 9, 4);
-    self.add_line(7, 6, 7);
-    self.add_line(5, 2, 2);
+    self.add_line(10, 6, 4);
+    self.add_line(7, 1, 5);
+    self.add_line(3, 9, 4);
+    self.add_line(11, 6, 4);
+    self.add_line(3, 11, 6);
+    self.add_line(5, 2, 20);
+    self.add_line(7, 4, 3);
+    self.add_line(11, 7, 3);
+    self.add_line(8, 4, 3);
+    self.add_line(10, 7, 3);
+    self.add_line(3, 10, 5);
+    self.add_line(4, 0, 1);
+    self.add_line(8, 0, 5);
+    self.add_line(9, 8, 4);
+    self.add_line(6, 5, 7);
+    self.add_line(4, 1, 2);
   }
 
-  /// Replaces the current graph with a medium-sized one
-  pub fn insert_medium_graph(&mut self)
-  {
-    self.clear();
-
-  let mut graph = DijkstraGraph {
-    points: BTreeMap::<u8, DijkstraNode>::from([
-      (1, DijkstraNode::new(IVec2 { x: 970, y: 108 }, 1)),
-      (2, DijkstraNode::new(IVec2 { x: 991, y: 340 }, 2)),
-      (3, DijkstraNode::new(IVec2 { x: 1023, y: 580 }, 3)),
-      (4, DijkstraNode::new(IVec2 { x: 509, y: 459 }, 4)),
-      (5, DijkstraNode::new(IVec2 { x: 750, y: 537 }, 5)),
-      (6, DijkstraNode::new(IVec2 { x: 747, y: 262 }, 6)),
-      (7, DijkstraNode::new(IVec2 { x: 535, y: 237 }, 7)),
-      (8, DijkstraNode::new(IVec2 { x: 497, y: 433 }, 8)),
-      (9, DijkstraNode::new(IVec2 { x: 352, y: 379 }, 9)),
-      (10, DijkstraNode::new(IVec2 { x: 308, y: 266 }, 10)),
-      (16, DijkstraNode::new(IVec2 { x: 163, y: 205 }, 11)),
-      (17, DijkstraNode::new(IVec2 { x: 149, y: 346 }, 12)),
-      (18, DijkstraNode::new(IVec2 { x: 620, y: 550 }, 13)),
-    ]),
-    lines: HashMap::<Edge, u16>::from([
-      (Edge { from: 5, to: 4 }, 2),
-      (Edge { from: 18, to: 5 }, 7),
-      (Edge { from: 6, to: 1 }, 6),
-      (Edge { from: 8, to: 18 }, 6),
-      (Edge { from: 9, to: 8 }, 8),
-      (Edge { from: 4, to: 2 }, 5),
-      (Edge { from: 6, to: 4 }, 9),
-      (Edge { from: 4, to: 3 }, 4),
-      (Edge { from: 17, to: 10 }, 8),
-      (Edge { from: 10, to: 7 }, 12),
-      (Edge { from: 16, to: 10 }, 7),
-      (Edge { from: 8, to: 6 }, 4),
-      (Edge { from: 10, to: 9 }, 11),
-      (Edge { from: 17, to: 9 }, 4),
-      (Edge { from: 7, to: 6 }, 5),
-    ]),
-    start: Some(10),
-    end: Some(4),
-    ..DijkstraGraph::default()
-  };
-  }
-
+  /// Replaces the current graph with a large one
   pub fn insert_large_graph(&mut self)
   {
     self.clear();
 
-    self.add_point(1, 595_f32, 640_f32);
-    self.add_point(2, 864_f32, 300_f32);
-    self.add_point(3, 550_f32, 369_f32);
-    self.add_point(4, 280_f32, 606_f32);
-    self.add_point(5, 748_f32, 127_f32);
-    self.add_point(6, 177_f32, 71_f32);
-    self.add_point(7, 467_f32, 84_f32);
-    self.add_point(8, 260_f32, 431_f32);
-    self.add_point(9, 928_f32, 642_f32);
-    self.add_point(10, 466_f32, 181_f32);
-    self.add_point(11, 433_f32, 27_f32);
-    self.add_point(12, 667_f32, 52_f32);
-    self.add_point(13, 847_f32, 75_f32);
-    self.add_point(14, 734_f32, 270_f32);
-    self.add_point(15, 931_f32, 233_f32);
-    self.add_point(16, 904_f32, 389_f32);
-    self.add_point(17, 423_f32, 467_f32);
-    self.add_point(18, 445_f32, 551_f32);
-    self.add_point(19, 691_f32, 559_f32);
+    self.append_point(595_f32, 640_f32);
+    self.append_point(864_f32, 300_f32);
+    self.append_point(550_f32, 369_f32);
+    self.append_point(280_f32, 606_f32);
+    self.append_point(748_f32, 127_f32);
+    self.append_point(177_f32, 71_f32);
+    self.append_point(467_f32, 84_f32);
+    self.append_point(260_f32, 431_f32);
+    self.append_point(928_f32, 642_f32);
+    self.append_point(466_f32, 181_f32);
+    self.append_point(433_f32, 27_f32);
+    self.append_point(667_f32, 52_f32);
+    self.append_point(847_f32, 75_f32);
+    self.append_point(734_f32, 270_f32);
+    self.append_point(931_f32, 233_f32);
+    self.append_point(904_f32, 389_f32);
+    self.append_point(423_f32, 467_f32);
+    self.append_point(445_f32, 551_f32);
+    self.append_point(691_f32, 559_f32);
 
-    self.add_line(12, 13, 1);
-    self.add_line(6, 8, 12);
-    self.add_line(14, 3, 1);
-    self.add_line(16, 9, 10);
-    self.add_line(15, 9, 14);
-    self.add_line(2, 19, 9);
-    self.add_line(18, 19, 3);
-    self.add_line(17, 18, 2);
-    self.add_line(8, 4, 1);
-    self.add_line(1, 9, 1);
-    self.add_line(7, 5, 1);
-    self.add_line(16, 3, 2);
-    self.add_line(3, 8, 1);
-    self.add_line(3, 17, 3);
-    self.add_line(15, 16, 1);
-    self.add_line(5, 14, 3);
-    self.add_line(10, 3, 8);
-    self.add_line(13, 2, 2);
-    self.add_line(12, 5, 2);
     self.add_line(11, 12, 1);
-    self.add_line(6, 11, 2);
-    self.add_line(10, 5, 3);
-    self.add_line(5, 2, 1);
-    self.add_line(16, 17, 5);
-    self.add_line(6, 7, 1);
-    self.add_line(18, 1, 1);
-    self.add_line(6, 10, 2);
-    self.add_line(2, 3, 1);
-    self.add_line(19, 9, 4);
-    self.add_line(17, 4, 2);
-    self.add_line(13, 15, 1);
+    self.add_line(5, 7, 12);
+    self.add_line(13, 2, 1);
+    self.add_line(15, 8, 10);
+    self.add_line(14, 8, 14);
+    self.add_line(1, 18, 9);
+    self.add_line(17, 18, 3);
+    self.add_line(16, 17, 2);
+    self.add_line(7, 3, 1);
+    self.add_line(0, 8, 1);
+    self.add_line(6, 4, 1);
+    self.add_line(15, 2, 2);
+    self.add_line(2, 7, 1);
+    self.add_line(2, 16, 3);
+    self.add_line(14, 15, 1);
+    self.add_line(4, 13, 3);
+    self.add_line(9, 2, 8);
+    self.add_line(12, 1, 2);
+    self.add_line(11, 4, 2);
+    self.add_line(10, 11, 1);
+    self.add_line(5, 10, 2);
+    self.add_line(9, 4, 3);
     self.add_line(4, 1, 1);
+    self.add_line(15, 16, 5);
+    self.add_line(5, 6, 1);
+    self.add_line(17, 0, 1);
+    self.add_line(5, 9, 2);
+    self.add_line(1, 2, 1);
+    self.add_line(18, 8, 4);
+    self.add_line(16, 3, 2);
+    self.add_line(12, 14, 1);
+    self.add_line(3, 0, 1);
   }
 }
 
