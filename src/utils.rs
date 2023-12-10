@@ -3,19 +3,27 @@ use macroquad::{
   prelude::{
     is_mouse_button_down, is_mouse_button_pressed, is_mouse_button_released, mouse_position, Color, IVec2, MouseButton,
   },
-  shapes::{draw_circle, draw_rectangle},
+  shapes::{draw_circle, draw_rectangle, draw_hexagon, draw_circle_lines, draw_line}, text::{get_text_center, draw_text, measure_text}, math::{Vec4, Vec2}, color::{YELLOW, BLACK, MAGENTA, GREEN},
 };
-use std::ops::Div;
+use std::ops::{Div, Mul};
 
 // TODO: rework everything
+// TODO: make points drawable as hexagons
 
-pub(crate) fn is_point_in_circle(point_x: f32, point_y: f32, circle_x: f32, circle_y: f32, circle_radius: f32) -> bool
+pub(crate) fn is_point_in_circle(
+  point_x: f32, point_y: f32,
+  circle_x: f32, circle_y: f32,
+  circle_radius: f32
+) -> bool
 {
   return (circle_x - point_x).powf(2_f32) + (circle_y - point_y).powf(2_f32) <= circle_radius.powf(2_f32);
 }
 
 pub(crate) fn is_point_in_rectangle(
-  point_x: f32, point_y: f32, rectangle_x: f32, rectangle_y: f32, rectangle_width: f32, rectangle_height: f32,
+  point_x: f32, point_y: f32,
+  rectangle_x: f32, rectangle_y: f32,
+  rectangle_width: f32,
+  rectangle_height: f32,
 ) -> bool
 {
   if point_x < rectangle_x
@@ -27,107 +35,117 @@ pub(crate) fn is_point_in_rectangle(
   return true;
 }
 
-pub(crate) fn draw_pill(x: f32, y: f32, width: f32, height: f32, color: Color) {
+pub(crate) fn draw_pill(x: f32, y: f32, width: f32, height: f32, color: Color)
+{
   draw_rectangle(x, y, width, height, color);
   draw_circle(x, y + height.div(2.0), height.div(2.0), color);
   draw_circle(x + width, y + height.div(2.0), height.div(2.0), color);
 }
 
-pub(crate) fn handle_mouse_input(mode: &Mode, graph: &mut DijkstraGraph) {
+pub(crate) fn handle_mouse_input(
+  mode: &Mode,
+  graph: &mut DijkstraGraph,
+  hovered_point_id: &mut Option<usize>,
+  mut selected_point_id: &mut Option<usize>,
+  line_length: &mut u16
+)
+{
+  use Mode::{Move, Line, Point, Path};
+
   match (
     mode,
     is_mouse_button_pressed(MouseButton::Left),
     is_mouse_button_down(MouseButton::Left),
     is_mouse_button_released(MouseButton::Left),
     is_mouse_button_pressed(MouseButton::Right),
-    graph.get_hovered_point_id(),
-    graph.selected_point_id,
-  ) {
+    hovered_point_id,
+    selected_point_id,
+  )
+  {
     // --- MOVE ---
 
     // Select a point to be moved around
-    (Mode::Move, true, _, _, false, Some(hovered_point_id), _) => {
-      graph.selected_point_id = Some(hovered_point_id);
-    },
+    (Move, true, _, _, false, Some(hovered_point_id), _) =>
+      selected_point_id = &mut Some(*hovered_point_id),
 
     // Move a point around
-    (Mode::Move, _, true, _, false, _, Some(selected_point_id)) => {
-      graph.set_point_coordinates(
-        selected_point_id,
-        IVec2 {
-          x: mouse_position().0 as i32,
-          y: mouse_position().1 as i32,
-        },
-      );
+    (Move, _, true, _, false, _, Some(selected_point_id)) =>
+    {
+      if let Some(point) = graph.get(*selected_point_id)
+      { point.position().set(mouse_position().0, mouse_position().1); }
     },
 
     // Releasing the selected point
-    (Mode::Move, _, _, true, false, _, _) => {
-      graph.selected_point_id = None;
-    },
+    (Move, _, _, true, false, _, _) =>
+      selected_point_id = &mut None,
 
     // --- POINT ---
 
     // Create a point
-    (Mode::Point, true, _, _, false, None, None) => {
-      graph.add_point(IVec2 {
-        x: mouse_position().0 as i32,
-        y: mouse_position().1 as i32,
-      });
-    },
+    (Point, true, _, _, false, None, None) =>
+      graph.append_point(mouse_position().0, mouse_position().1),
 
     // Remove a point
-    (Mode::Point, false, _, _, true, Some(hovered_point_id), _) => {
-      graph.remove_point(hovered_point_id);
-    },
+    (Point, false, _, _, true, Some(hovered_point_id), _) =>
+      graph.remove_point(*hovered_point_id),
 
     // --- LINE ---
 
     // Select a point to draw a line from
-    (Mode::Line, true, _, _, false, Some(hovered_point_id), None) => {
-      graph.selected_point_id = Some(hovered_point_id);
-    },
+    (Line, true, _, _, false, Some(hovered_point_id), None) =>
+      selected_point_id = &mut Some(*hovered_point_id),
 
     // Unset the selected point if no other point is clicked on
-    (Mode::Line, true, _, _, _, None, Some(_)) | (Mode::Line, _, _, _, true, None, Some(_)) => {
-      graph.selected_point_id = None;
-    },
+    (Line, true, _, _, _, None, Some(_)) | (Mode::Line, _, _, _, true, None, Some(_)) =>
+      selected_point_id = &mut None,
 
     // Select a point to draw the line to
-    (Mode::Line, true, _, _, false, Some(hovered_point_id), Some(selected_point_id)) => {
-      graph.add_line(selected_point_id, hovered_point_id);
-      graph.selected_point_id = None;
+    (Line, true, _, _, false, Some(hovered_point_id), mut selected_point_id) =>
+    {
+      if selected_point_id.is_none()
+      { return; }
+
+      graph.add_line(selected_point_id.unwrap(), *hovered_point_id, *line_length);
+      selected_point_id = &mut None;
     },
 
     // Deletes the selected line
-    (Mode::Line, false, _, _, true, Some(hovered_point_id), Some(selected_point_id)) => {
-      graph.remove_line(selected_point_id, hovered_point_id);
-      graph.selected_point_id = None;
+    (Line, false, _, _, true, Some(hovered_point_id), mut selected_point_id) =>
+    {
+      if selected_point_id.is_none()
+      { return; }
+
+      graph.remove_line(selected_point_id.unwrap(), *hovered_point_id);
+      selected_point_id = &mut None;
     },
 
     // --- PATH ---
 
     // Select a start point with left click
-    (Mode::Path, true, _, _, false, Some(hovered_point_id), None) => {
-      graph.start = Some(hovered_point_id);
+    (Path, true, _, _, false, Some(hovered_point_id), None) =>
+    {
+      graph.set_start(Some(*hovered_point_id));
       graph.clear_path();
     },
 
     // Unsetting the start point
-    (Mode::Path, true, _, _, false, None, None) => {
-      graph.start = None;
+    (Path, true, _, _, false, None, None) =>
+    {
+      graph.clear_start();
       graph.clear_path();
     },
 
     // Select an end point with right click
-    (Mode::Path, false, _, _, true, Some(hovered_point_id), None) => {
-      graph.end = Some(hovered_point_id);
+    (Path, false, _, _, true, Some(hovered_point_id), None) =>
+    {
+      graph.set_end(Some(*hovered_point_id));
       graph.clear_path();
     },
 
     // Unsetting the end point
-    (Mode::Path, false, _, _, true, None, None) => {
-      graph.end = None;
+    (Path, false, _, _, true, None, None) =>
+    {
+      graph.clear_end();
       graph.clear_path();
     },
 
@@ -135,89 +153,158 @@ pub(crate) fn handle_mouse_input(mode: &Mode, graph: &mut DijkstraGraph) {
   }
 }
 
-pub fn paint_path(&self)
+pub(crate) fn paint_graph(
+  graph: &DijkstraGraph,
+  radius: &f32,
+  path_thickness: &f32,
+  padding: &u8,
+  hovered_point_id: &Option<usize>,
+  selected_point_id: &Option<usize>,
+  path_color: &[f32;3],
+  line_color: &[f32;3],
+  point_color: &[f32;3]
+)
 {
-  let Some(path) = &self.path else { return; };
-
-  for (from, to) in path.iter().zip(path.iter().skip(1))
+  // Paints lines
+  if !graph.lines.is_empty()
   {
-    let Some(from_point) = self.points.get(from) else { continue; };
-    let Some(to_point) = self.points.get(to) else { continue; };
+    graph.paint_lines();
+    graph.paint_path();
+    graph.paint_arrow_heads();
+    graph.paint_line_lengths();
+  }
 
-    draw_line(
-      from_point.position.x as f32,
-      from_point.position.y as f32,
-      to_point.position.x as f32,
-      to_point.position.y as f32,
-      self.path_thickness,
-      Color::from_vec(Vec4::new(
-        self.path_color[0],
-        self.path_color[1],
-        self.path_color[2],
-        1.,
-      )),
-    );
+  // Paints points
+  if !graph.points.is_empty()
+  { graph.paint_points(); }
+
+  // TODO: consider replacing this with Option::inspect
+  // Paints start label
+  if let Some(start_id) = graph.start
+  {
+    if let Some(start_point) = graph.points.get(&start_id)
+    { graph.paint_label("Start", &start_point.position); }
+  }
+
+  // TODO: consider replacing this with Option::inspect
+  // Paints end label
+  if let Some(end_id) = graph.end
+  {
+    if let Some(end_point) = graph.points.get(&end_id)
+    { graph.paint_label("End", &end_point.position); }
   }
 }
 
-pub fn paint_points(&mut self)
+/// The `position` is the center of the point over which the label is painted.
+fn paint_label(text: &str, position: &Vec2, radius: &f32, padding: &u8)
 {
-  // Painting all points and centering the text
-  for (id, node) in self.points.iter()
+  let text_center = get_text_center(text, None, 20, 1.0, 0.0);
+  let text_dimensions = measure_text(text, None, 20, 1.0);
+
+  // A 2 pixel gap between the label and the point is hard-coded
+  draw_pill(
+    position.x - text_dimensions.width.div(2.0),
+    position.y - text_dimensions.height - radius - padding.mul(2) as f32 - 2.0,
+    text_dimensions.width,
+    text_dimensions.height + padding.mul(2) as f32,
+    GREEN,
+  );
+
+  draw_text(
+    text,
+    position.x - text_center.x,
+    position.y - text_center.y - radius - text_dimensions.height.div(2.0) - *padding as f32 - 2.0,
+    20.0,
+    Color::from_rgba(20, 0, 40, 255),
+  );
+}
+
+fn paint_path(graph: &DijkstraGraph, path_color: &[f32;3], path_thiccness: &f32)
+{
+  if let Some(path) = graph.get_path()
   {
-    draw_circle(
-        node.position.x as f32,
-        node.position.y as f32,
-        self.radius as f32,
-        if self.selected_point_id == Some(*id)
-        { YELLOW }
-        else
-        {
-          Color::from_vec(Vec4::new(
-            self.point_color[0],
-            self.point_color[1],
-            self.point_color[2],
-            1.,
-          ))
-        },
-    );
+    for (from, to) in path.iter().zip(path.iter().skip(1))
+    {
+      let Some(from_point) = graph.get(*from) else { continue; };
+      let Some(to_point) = graph.get(*to) else { continue; };
 
-    let text_center = get_text_center(id.to_string().as_str(), None, 20, 1.0, 0.0);
+      draw_line(
+        from_point.position().x(),
+        from_point.position().y(),
+        to_point.position().x(),
+        to_point.position().y(),
+        *path_thiccness,
+        Color::from_vec(Vec4::new(path_color[0],path_color[1],path_color[2], 1.,)),
+      );
+    }
+  }
+}
 
-    draw_text(
-      id.to_string().as_str(),
-      node.position.x as f32 - text_center.x,
-      node.position.y as f32 - text_center.y,
-      20.0,
-      BLACK,
-    );
+fn paint_points(
+  graph: &DijkstraGraph,
+  radius: &f32,
+  mut hovered_point_id: &Option<usize>,
+  selected_point_id: &Option<usize>,
+  point_color: &[f32;3]
+)
+{
+  // Painting all points with their ids in the center
+  for (id, point) in graph.points_iter().enumerate()
+  {
+    if let Some(point) = point
+    {
+      // Drawing the points
+      draw_circle(
+        point.position().x(),
+        point.position().y(),
+        *radius,
+        Color::from_vec(Vec4::new(point_color[0], point_color[1], point_color[2], 1_f32))
+      );
+
+      let text_center = get_text_center(id.to_string().as_str(), None, 20, 1.0, 0.0);
+
+      // Drawing the point id
+      draw_text(
+        id.to_string().as_str(),
+        point.position().x() - text_center.x,
+        point.position().y() - text_center.y,
+        20.0,
+        BLACK,
+      );
+    }
   }
 
-  // Checking for the hovered point id (if it hasn't been done already)
-  if !self.has_hovered_point_been_checked { self.find_hovered_point(); }
-
-  // TODO: consider replacing this with Option::inspect
-  // Painting an outline for the hovered point (if it exists)
-  if let Some(hovered_point_id) = self.hovered_point_id
+  // Drawing the selected point differently
+  if let Some(selected_point_id) = selected_point_id
   {
-    if let Some(node) = self.points.get(&hovered_point_id)
+    if let Some(point) = graph.get(*selected_point_id)
+    {
+      draw_circle(
+        point.position().x(),
+        point.position().y(),
+        *radius, YELLOW
+      );
+    }
+  }
+
+  // Drawing an outline around the hovered point
+  if let Some(hovered_point_id) = hovered_point_id
+  {
+    if let Some(point) = graph.get(*hovered_point_id)
     {
       draw_circle_lines(
-        node.position.x as f32,
-        node.position.y as f32,
-        (self.radius + 4) as f32,
-        1 as f32,
-        MAGENTA,
+        point.position().x(),
+        point.position().y(),
+        *radius + 4_f32, 1_f32, MAGENTA
       );
     }
   }
 
   // Reset the hovered point id
-  self.hovered_point_id = None;
-  self.has_hovered_point_been_checked = false;
+  hovered_point_id = &None;
 }
 
-pub fn paint_arrow_heads(&self) {
+fn paint_arrow_heads(&self) {
     for (line, _) in self.lines.iter() {
         match (self.points.get(&line.from), self.points.get(&line.to)) {
             (Some(from_point), Some(to_point)) => {
@@ -333,127 +420,65 @@ pub fn paint_arrow_heads(&self) {
     }
 }
 
-pub fn paint_lines(&self)
+fn paint_lines(graph: &DijkstraGraph, line_color: &[f32;3], path_thickness: &f32)
 {
-  for (line, _) in self.lines.iter()
+  for point in graph.points_iter()
   {
-    let Some(from_point) = self.points.get(&line.from) else { continue; };
-    let Some(to_point) = self.points.get(&line.to) else { continue; };
+    let Some(from) = point else { continue; };
 
-    draw_line(
-      from_point.position.x as f32,
-      from_point.position.y as f32,
-      to_point.position.x as f32,
-      to_point.position.y as f32,
-      1.0,
-      Color::from_vec(Vec4::new(
-        self.line_color[0],
-        self.line_color[1],
-        self.line_color[2],
-        1.0,
-      )),
-    );
-  }
-}
-
-pub fn paint_line_lengths(&self)
-{
-  for (line, length) in self.lines.iter()
-  {
-    match (self.points.get(&line.from), self.points.get(&line.to))
+    for edge in from.edges().iter()
     {
-      (Some(from_point), Some(to_point)) =>
-      {
-        let position = IVec2 {
-          x: ((1.0 / 3.0) * from_point.position.x as f32 + (2.0 / 3.0) * to_point.position.x as f32) as i32,
-          y: ((1.0 / 3.0) * from_point.position.y as f32 + (2.0 / 3.0) * to_point.position.y as f32) as i32,
-        };
+      let Some(to) = graph.get(edge.destination()) else { continue; };
 
-        let text_center = get_text_center(length.to_string().as_str(), None, 20, 1.0, 0.0);
-        let text_dimensions = measure_text(length.to_string().as_str(), None, 20, 1.0);
-
-        utils::draw_pill(
-          position.x as f32 - text_dimensions.width.div(2.0),
-          position.y as f32 - text_dimensions.height.div(2.0) - self.padding as f32,
-          text_dimensions.width,
-          text_dimensions.height + self.padding.mul(2) as f32,
-          Color::from_vec(Vec4::new(
-            self.line_color[0],
-            self.line_color[1],
-            self.line_color[2],
-            1.,
-          )),
-        );
-
-        draw_text(
-          length.to_string().as_str(),
-          position.x as f32 - text_center.x,
-          position.y as f32 - text_center.y,
-          20.0,
-          BLACK,
-        );
-      }
-      (_, _) => (),
+      draw_line(
+        from.position().x(),
+        from.position().y(),
+        to.position().x(),
+        to.position().y(),
+        *path_thickness,
+        Color::from_vec(Vec4::new(line_color[0], line_color[1], line_color[2], 1.0)),
+      );
     }
   }
 }
 
-/// The `position` is the center of the point over which the label is painted.
-pub fn paint_label(&self, text: &str, position: &IVec2)
+fn paint_line_lengths(graph: &DijkstraGraph, padding: u8, line_color: &[f32;3])
 {
-  let text_center = get_text_center(text, None, 20, 1.0, 0.0);
-  let text_dimensions = measure_text(text, None, 20, 1.0);
-
-  // A 2 pixel gap between the label and the point is hard-coded
-  utils::draw_pill(
-    position.x as f32 - text_dimensions.width.div(2.0),
-    position.y as f32 - text_dimensions.height - self.radius as f32 - self.padding.mul(2) as f32 - 2.0,
-    text_dimensions.width,
-    text_dimensions.height + self.padding.mul(2) as f32,
-    GREEN,
-  );
-
-  draw_text(
-    text,
-    position.x as f32 - text_center.x,
-    position.y as f32 - text_center.y as f32 - self.radius as f32 - text_dimensions.height.div(2.0) - self.padding as f32 - 2.0,
-    20.0,
-    Color::from_rgba(20, 0, 40, 255),
-  );
-}
-
-pub fn paint_graph(&mut self)
-{
-  // Paints lines
-  if !self.lines.is_empty()
+  for point in graph.points_iter()
   {
-    self.paint_lines();
-    self.paint_path();
-    self.paint_arrow_heads();
-    self.paint_line_lengths();
-  }
+    let Some(from) = point else { continue; };
 
-  // Paints points
-  if !self.points.is_empty()
-  { self.paint_points(); }
+    for edge in from.edges().iter()
+    {
+      let Some(to) = graph.get(edge.destination()) else { continue; };
 
-  // TODO: consider replacing this with Option::inspect
-  // Paints start label
-  if let Some(start_id) = self.start
-  {
-    if let Some(start_point) = self.points.get(&start_id)
-    { self.paint_label("Start", &start_point.position); }
-  }
+      let position = Vec2
+      {
+        x: ((1.0 / 3.0) * from.position().x() + (2.0 / 3.0) * to.position().x()),
+        y: ((1.0 / 3.0) * from.position().y() + (2.0 / 3.0) * to.position().y()),
+      };
 
-  // TODO: consider replacing this with Option::inspect
-  // Paints end label
-  if let Some(end_id) = self.end
-  {
-    if let Some(end_point) = self.points.get(&end_id)
-    { self.paint_label("End", &end_point.position); }
+      let text_center = get_text_center(edge.distance().to_string().as_str(), None, 20, 1.0, 0.0);
+      let text_dimensions = measure_text(edge.distance().to_string().as_str(), None, 20, 1.0);
+
+      draw_pill(
+        position.x - text_dimensions.width.div(2.0),
+        position.y - text_dimensions.height.div(2.0) - padding as f32,
+        text_dimensions.width,
+        text_dimensions.height + padding.mul(2) as f32,
+        Color::from_vec(Vec4::new(line_color[0], line_color[1], line_color[2], 1.,)),
+      );
+
+      draw_text(
+        edge.distance().to_string().as_str(),
+        position.x - text_center.x,
+        position.y - text_center.y,
+        20.0,
+        BLACK,
+      );
+    }
   }
 }
-
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub(crate) enum Mode {

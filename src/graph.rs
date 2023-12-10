@@ -1,3 +1,5 @@
+use std::slice::Iter;
+
 use crate::utils;
 
 // TODO: add iterator over points
@@ -19,26 +21,7 @@ pub(crate) struct DijkstraGraph
   end: Option<usize>
 }
 
-struct DijkstraNode
-{
-  position: Position,
-  parent: Option<usize>,
-  distance: Option<u16>,
-  visited: bool,
-  edges: Vec<Edge>,
-}
 
-struct Edge
-{
-  destination: usize,
-  distance: u16,
-}
-
-struct Position
-{
-  x: f32,
-  y: f32,
-}
 
 impl Default for DijkstraGraph
 {
@@ -121,7 +104,7 @@ impl DijkstraGraph
   }
 
   /// Adds a line; if it already exists, the length gets updated
-  fn add_line(&mut self, from: usize, to: usize, distance: u16)
+  pub fn add_line(&mut self, from: usize, to: usize, distance: u16)
   {
     if from > 100 || to > 100 { return; }
 
@@ -129,7 +112,7 @@ impl DijkstraGraph
     { node.edges.push(Edge { destination: to, distance }); }
   }
 
-  fn remove_line(&mut self, from: usize, to: usize)
+  pub fn remove_line(&mut self, from: usize, to: usize)
   {
     if from > 100 || to > 100 { return; }
 
@@ -140,25 +123,29 @@ impl DijkstraGraph
     }
   }
 
-  fn update_node_position(&mut self, id: usize, x: f32, y: f32)
-  {
-    if id > 100 { return; }
-    if let Some(node) = &mut self.graph[id] { node.update_position(x, y); }
-  }
+  pub fn get(&self, id: usize) -> Option<DijkstraNode>
+  { return self.graph[id]; }
 
-  fn update_line_distance(&mut self, from: usize, to: usize, distance: u16)
-  {
-    if from > 100 || to > 100 { return; }
+  pub fn get_start(&self) -> Option<usize>
+  { return self.start; }
 
-    if let Some(node) = &mut self.graph[from]
-    {
-      if let Some(edge) = node.edges.get(to)
-      { edge.update_distance(distance); }
-    }
-  }
+  pub fn set_start(&mut self, start: Option<usize>)
+  { self.start = start; }
+
+  pub fn clear_start(&mut self)
+  { self.start = None; }
+
+  pub fn get_end(&self) -> Option<usize>
+  { return self.end; }
+
+  pub fn set_end(&mut self, end: Option<usize>)
+  { self.end = end; }
+
+  pub fn clear_end(&mut self)
+  { self.end = None; }
 
   /// Returns true if the shortest path has been found
-  fn find_shortest_path(&mut self, start: usize, end: usize) -> bool
+  pub fn find_shortest_path(&mut self, start: usize, end: usize) -> bool
   {
     if start > 100 || end > 100 { return false; }
     self.start = Some(start);
@@ -168,7 +155,7 @@ impl DijkstraGraph
     // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
   }
 
-  fn get_path(&self) -> Option<Vec<usize>>
+  pub fn get_path(&self) -> Option<Vec<usize>>
   {
     if self.start.is_none() || self.end.is_none() { return None; }
 
@@ -190,12 +177,10 @@ impl DijkstraGraph
     return Some(path);
   }
 
-  fn get_points(&self)
-  {
-    todo!();
-  }
+  pub fn points_iter(&self) -> Iter<Option<DijkstraNode>>
+  { return self.graph.iter(); }
 
-  fn get_lines(&self)
+  pub fn get_lines(&self)
   {
     todo!();
   }
@@ -379,6 +364,15 @@ impl DijkstraGraph
   }
 }
 
+struct DijkstraNode
+{
+  position: Position,
+  parent: Option<usize>,
+  distance: Option<u16>,
+  visited: bool,
+  edges: Vec<Edge>,
+}
+
 impl DijkstraNode
 {
   fn new(x: f32, y: f32) -> Self
@@ -393,25 +387,74 @@ impl DijkstraNode
     }
   }
 
-  pub fn update_position(&mut self, x: f32, y: f32)
-  { self.position.update(x, y); }
+  pub fn position(&self) -> Position
+  { return self.position; }
+
+  pub fn parent(&self) -> Option<usize>
+  { return self.parent; }
+
+  pub fn set_parent(&mut self, parent: Option<usize>)
+  { self.parent = parent; }
+
+  pub fn distance(&self) -> Option<u16>
+  { return self.distance; }
+
+  pub fn set_distance(&mut self, distance: Option<u16>)
+  { self.distance = distance; }
+
+  pub fn visited(&self) -> bool
+  { return self.visited; }
+
+  pub fn set_visited(&mut self, visited: bool)
+  { self.visited = visited; }
+
+  pub fn edges(&self) -> Vec<Edge>
+  { return self.edges; }
+}
+
+// TODO: consider making these fields pub
+struct Position
+{
+  x: f32,
+  y: f32,
 }
 
 impl Position
 {
-  pub fn get_x(&self) -> f32
+  pub fn x(&self) -> f32
   { return self.x; }
 
-  pub fn get_y(&self) -> f32
+  pub fn set_x(&mut self, x: f32)
+  { self.x = x; }
+
+  pub fn y(&self) -> f32
   { return self.y; }
 
-  pub fn update(&mut self, x: f32, y: f32)
+  pub fn set_y(&mut self, y: f32)
+  { self.y = y; }
+
+  pub fn get(&self) -> (f32, f32)
+  { return (self.x, self.y); }
+
+  pub fn set(&mut self, x: f32, y: f32)
   { self.x = x; self.y = y; }
+}
+
+struct Edge
+{
+  destination: usize,
+  distance: u16,
 }
 
 impl Edge
 {
-  pub fn update_distance(&mut self, distance: u16)
+  pub fn destination(&self) -> usize
+  { return self.destination; }
+
+  pub fn distance(&self) -> u16
+  { return self.distance; }
+
+  pub fn set_distance(&mut self, distance: u16)
   { self.distance = distance; }
 }
 

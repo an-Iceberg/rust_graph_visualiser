@@ -5,6 +5,8 @@ use egui_macroquad::{
 };
 use macroquad::time::get_fps;
 
+// TODO: make option to switch to hexagons for points
+
 pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color: &mut [f32; 3]) {
   ui(|egui_context| {
     // Disabling all shadows

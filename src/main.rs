@@ -66,7 +66,15 @@ async fn main()
       screen_width() - (ui_width + (3_f32 * radius)),
       screen_height() - (2_f32 * radius),
     )
-    { utils::handle_mouse_input(&mode, &mut graph); }
+    {
+      utils::handle_mouse_input(
+        &mode,
+        &mut graph,
+        &mut hovered_point_id,
+        &mut selected_point_id,
+        &mut line_length
+      );
+    }
 
     // --- GUI ---
     // TODO: style the GUI
@@ -81,7 +89,16 @@ async fn main()
       graph.print_path();
     }
 
-    graph.paint_graph();
+    utils::paint_graph(
+      &graph, &radius,
+      &path_thickness,
+      &padding,
+      &hovered_point_id,
+      &selected_point_id,
+      &path_color,
+      &line_color,
+      &point_color
+    );
 
     draw();
 
