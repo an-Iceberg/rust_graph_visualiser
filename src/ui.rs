@@ -15,7 +15,6 @@ pub(crate) fn paint_ui(
   arrow_head_length: &mut f32,
   path_thickness: &mut f32,
   base_point: &mut f32,
-  padding: &mut u8,
   selected_point_id: &mut Option<usize>,
   line_length: &mut u16,
   path_color: &mut [f32;3],
@@ -57,10 +56,10 @@ pub(crate) fn paint_ui(
           ui.separator();
 
           // The newlines are a hack to make all text fill up the same amount of vertical space
-          match (&mode, selected_point_id)
+          match (&mode, selected_point_id.is_some())
           { (Mode::Move, _) => ui.label("• Left click on a point to select it.\n• Hold left click to move it around."),
-            (Mode::Line, None) => ui.label("• Left click on a point to select it."),
-            (Mode::Line, Some(_)) => ui.label("• Left click on another point to create a new line.\n• Right click on another point to delete an existing line."),
+            (Mode::Line, false) => ui.label("• Left click on a point to select it."),
+            (Mode::Line, true) => ui.label("• Left click on another point to create a new line.\n• Right click on another point to delete an existing line."),
             (Mode::Point, _) => ui.label("• Left click somewhere to create a point.\n• Right click on a point to delete it."),
             (Mode::Path, _) => ui.label("• Left click on a point to set the start.\n• Right click on a point to set the end.")
           };

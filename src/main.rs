@@ -39,16 +39,16 @@ async fn main()
   // This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   let mut selected_point_id: Option<usize> = None;
 
-  let ui_width = 200_f32;
+  let ui_width: f32 = 200.;
   let mut mode = Mode::Move;
 
-  let mut padding = 3_u8;
-  let mut angle = 0.436_f32;
-  let mut arrow_head_length = 20_f32;
-  let mut radius = 13_f32;
-  let mut line_length = 1_u16;
-  let mut path_thickness = 2_f32;
-  let mut base_point = 15_f32;
+  let mut padding: u8 = 3;
+  let mut angle: f32 = 0.436;
+  let mut arrow_head_length: f32 = 20.;
+  let mut radius: f32 = 13.;
+  let mut line_length: u16 = 1;
+  let mut path_thickness: f32 = 2.;
+  let mut base_point: f32 = 15.;
 
   let mut bg_color: [f32;3] = [0.25_f32, 0., 0.5];
   let mut path_color: [f32;3] = [0., 1., 0.];
@@ -92,7 +92,6 @@ async fn main()
       &mut arrow_head_length,
       &mut path_thickness,
       &mut base_point,
-      &mut padding,
       &mut selected_point_id,
       &mut line_length,
       &mut path_color,
@@ -114,6 +113,9 @@ async fn main()
       &graph, &radius,
       &path_thickness,
       &padding,
+      &angle,
+      &base_point,
+      &arrow_head_length,
       &hovered_point_id,
       &selected_point_id,
       &path_color,

@@ -20,14 +20,14 @@ fn generate_random_points_graph(amount_of_points: u8) -> DijkstraGraph
 #[test]
 fn add_some_points()
 {
-  let mut graph = generate_random_points_graph(3);
+  let graph = generate_random_points_graph(3);
   assert_eq!(graph.size(), 3);
 }
 
 #[test]
 fn add_many_points()
 {
-  let mut graph = generate_random_points_graph(50);
+  let graph = generate_random_points_graph(50);
   assert_eq!(graph.size(), 50);
 }
 
@@ -35,7 +35,7 @@ fn add_many_points()
 fn max_amount_of_points()
 {
   // Creating graph and "adding" 1_000 points to it
-  let mut graph = generate_random_points_graph(1_000);
+  let graph = generate_random_points_graph(255);
   // The graph should still only have 100 points
   assert_eq!(graph.size(), 101);
 }
