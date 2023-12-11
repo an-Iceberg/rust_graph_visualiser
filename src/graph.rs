@@ -126,30 +126,36 @@ impl DijkstraGraph
   pub fn get(&self, id: usize) -> Option<DijkstraNode>
   { return self.graph[id]; }
 
-  pub fn get_start(&self) -> Option<usize>
+  pub fn start(&self) -> Option<usize>
   { return self.start; }
 
-  pub fn set_start(&mut self, start: Option<usize>)
-  { self.start = start; }
+  pub fn set_start(&mut self, start: usize)
+  {
+    if start > 100 { return; }
+
+    self.start = Some(start);
+  }
 
   pub fn clear_start(&mut self)
   { self.start = None; }
 
-  pub fn get_end(&self) -> Option<usize>
+  pub fn end(&self) -> Option<usize>
   { return self.end; }
 
-  pub fn set_end(&mut self, end: Option<usize>)
-  { self.end = end; }
+  pub fn set_end(&mut self, end: usize)
+  {
+    if end > 100 { return; }
+
+    self.end = Some(end);
+  }
 
   pub fn clear_end(&mut self)
   { self.end = None; }
 
   /// Returns true if the shortest path has been found
-  pub fn find_shortest_path(&mut self, start: usize, end: usize) -> bool
+  pub fn find_shortest_path(&mut self) -> bool
   {
-    if start > 100 || end > 100 { return false; }
-    self.start = Some(start);
-    self.end = Some(end);
+    if self.start.is_none() || self.end.is_none() { return false; }
 
     todo!();
     // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
@@ -179,6 +185,27 @@ impl DijkstraGraph
 
   pub fn points_iter(&self) -> Iter<Option<DijkstraNode>>
   { return self.graph.iter(); }
+
+  pub fn lines_iter(&self) -> Iter<&(DijkstraNode, u16, DijkstraNode)>
+  {
+    self.graph.iter()
+      .filter_map(|node| *node)
+      .map(|node| (node, node.edges))
+      .map(|(node, edges)| edges.iter()
+        .map(|edge| (edge.distance, edge.destination))
+        .map(|(distance, id)| (distance, self.graph.get(id)))
+        .filter(|(distance, option)| option.is_some())
+        .map(|(distance, option)| (distance, option.unwrap()))
+        .filter(|(distance, option)| option.is_some())
+        .map(|(distance, option)| (distance, option.unwrap()))
+        .map(|(distance, destination)| (node, distance, destination))
+        .collect::<Vec<_>>()
+        .iter()
+      )
+      .flatten()
+      .collect::<Vec<_>>()
+      .iter()
+  }
 
   pub fn get_lines(&self)
   {
@@ -366,7 +393,7 @@ impl DijkstraGraph
 
 struct DijkstraNode
 {
-  position: Position,
+  pub position: Position,
   parent: Option<usize>,
   distance: Option<u16>,
   visited: bool,
@@ -415,24 +442,12 @@ impl DijkstraNode
 // TODO: consider making these fields pub
 struct Position
 {
-  x: f32,
-  y: f32,
+  pub x: f32,
+  pub y: f32,
 }
 
 impl Position
 {
-  pub fn x(&self) -> f32
-  { return self.x; }
-
-  pub fn set_x(&mut self, x: f32)
-  { self.x = x; }
-
-  pub fn y(&self) -> f32
-  { return self.y; }
-
-  pub fn set_y(&mut self, y: f32)
-  { self.y = y; }
-
   pub fn get(&self) -> (f32, f32)
   { return (self.x, self.y); }
 

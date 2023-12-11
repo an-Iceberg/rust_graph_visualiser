@@ -58,7 +58,9 @@ fn shortest_path_small()
   {
     let mut graph = DijkstraGraph::new();
     graph.insert_small_graph();
-    assert!(graph.find_shortest_path(2, 0));
+    graph.set_start(2);
+    graph.set_end(0);
+    assert!(graph.find_shortest_path());
 
     let should_path_1 = vec![2, 3, 4, 0];
     let should_path_2 = vec![2, 5, 7, 0];
@@ -122,7 +124,10 @@ fn shortest_path_small()
 
     let should_path = vec![6, 7, 0, 1, 2, 8];
 
-    assert!(graph.find_shortest_path(6, 8));
+    graph.set_start(6);
+    graph.set_end(8);
+
+    assert!(graph.find_shortest_path());
 
     match graph.get_path()
     {
@@ -150,7 +155,10 @@ fn shortest_path_medium()
     let should_path_2 = vec![3, 10, 7, 4, 0];
     let should_path_3 = vec![3, 11, 8, 4, 0];
 
-    graph.find_shortest_path(3, 0);
+    graph.set_start(3);
+    graph.set_end(0);
+
+    graph.find_shortest_path();
 
     match graph.get_path()
     {
@@ -175,7 +183,10 @@ fn shortest_path_medium()
     let should_path_4 = vec![3, 11, 7, 4, 1];
     let should_path_5 = vec![3, 11, 7, 1];
 
-    graph.find_shortest_path(3, 1);
+    graph.set_start(3);
+    graph.set_end(1);
+
+    graph.find_shortest_path();
 
     match graph.get_path()
     {
@@ -206,7 +217,10 @@ fn shortest_path_medium()
     let should_path_1 = vec![3, 10, 7, 5, 2];
     let should_path_2 = vec![3, 11, 7, 5, 2];
 
-    graph.find_shortest_path(3, 2);
+    graph.set_start(3);
+    graph.set_end(2);
+
+    graph.find_shortest_path();
 
     match graph.get_path()
     {
@@ -232,7 +246,10 @@ fn shortest_path_large()
 
   let should_path = vec![5, 6, 4, 1, 2, 7, 3, 0, 8];
 
-  graph.find_shortest_path(5, 8);
+  graph.set_start(5);
+  graph.set_end(8);
+
+  graph.find_shortest_path();
 
   match graph.get_path()
   {
@@ -284,7 +301,10 @@ fn start_and_end_are_within_graph()
 
   let should_path = vec![10, 7, 6, 4];
 
-  graph.find_shortest_path(10, 4);
+  graph.set_start(10);
+  graph.set_end(4);
+
+  graph.find_shortest_path();
 
   match graph.get_path()
   {
@@ -305,7 +325,10 @@ fn no_possible_path()
   let mut graph = DijkstraGraph::new();
   graph.insert_small_graph();
 
-  assert!(!graph.find_shortest_path(0, 2));
+  graph.set_start(0);
+  graph.set_end(2);
+
+  assert!(!graph.find_shortest_path());
   assert!(graph.get_path().is_none());
 }
 
@@ -332,7 +355,10 @@ fn disconnected_graph()
   graph.add_line(7, 6, 20);
   graph.add_line(2, 4, 20);
 
-  graph.find_shortest_path(2, 0);
+  graph.set_start(2);
+  graph.set_end(0);
+
+  graph.find_shortest_path();
 
   assert!(graph.get_path().is_none());
 }
@@ -371,7 +397,10 @@ fn cyclical_valid_path()
 
   let should_path = vec![3, 7, 6, 5, 4];
 
-  graph.find_shortest_path(3, 4);
+  graph.set_start(3);
+  graph.set_end(4);
+
+  graph.find_shortest_path();
 
   match graph.get_path()
   {

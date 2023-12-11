@@ -1,4 +1,4 @@
-use crate::{graph::DijkstraGraph, utils::Mode};
+use crate::{graph::DijkstraGraph, Mode};
 use egui_macroquad::{
   egui::{epaint::Shadow, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window},
   ui,
@@ -7,7 +7,23 @@ use macroquad::time::get_fps;
 
 // TODO: make option to switch to hexagons for points
 
-pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color: &mut [f32; 3]) {
+pub(crate) fn paint_ui(
+  mode: &mut Mode,
+  graph: &mut DijkstraGraph,
+  radius: &mut f32,
+  angle: &mut f32,
+  arrow_head_length: &mut f32,
+  path_thickness: &mut f32,
+  base_point: &mut f32,
+  padding: &mut u8,
+  selected_point_id: &mut Option<usize>,
+  line_length: &mut u16,
+  path_color: &mut [f32;3],
+  line_color: &mut [f32;3],
+  point_color: &mut [f32;3],
+  bg_color: &mut [f32; 3],
+)
+{
   ui(|egui_context| {
     // Disabling all shadows
     egui_context.set_visuals(Visuals {
@@ -41,7 +57,7 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
           ui.separator();
 
           // The newlines are a hack to make all text fill up the same amount of vertical space
-          match (&mode, graph.selected_point_id)
+          match (&mode, selected_point_id)
           { (Mode::Move, _) => ui.label("• Left click on a point to select it.\n• Hold left click to move it around."),
             (Mode::Line, None) => ui.label("• Left click on a point to select it."),
             (Mode::Line, Some(_)) => ui.label("• Left click on another point to create a new line.\n• Right click on another point to delete an existing line."),
@@ -54,18 +70,18 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
             {
               ui.separator();
               ui.label("Line length:");
-              ui.add(Slider::new(&mut graph.line_length, 1..=255).logarithmic(true));
+              ui.add(Slider::new(line_length, 1..=255).logarithmic(true));
             }
             Mode::Path =>
             { ui.separator();
-              ui.add_enabled_ui(graph.start.is_some() && graph.end.is_some(), |ui| {
+              ui.add_enabled_ui(graph.start().is_some() && graph.end().is_some(), |ui| {
                   if ui.button("Find shortest path").clicked() {
                     graph.find_shortest_path();
                   }
               });
               ui.horizontal(|ui|
               { ui.label("Pick the color of the path:");
-                ui.color_edit_button_rgb(&mut graph.path_color);
+                ui.color_edit_button_rgb(path_color);
               });
             }
             _ => ()
@@ -73,7 +89,7 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
 
           ui.separator();
 
-          ui.add_space(match (&mode, graph.selected_point_id) {
+          ui.add_space(match (&mode, selected_point_id) {
             (Mode::Move, _) => 215.,
             (Mode::Line, None) => 182.,
             (Mode::Line, Some(_)) => 140.,
@@ -104,30 +120,30 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
           ui.horizontal(|ui| {
             ui.label("Angle:");
             ui.add_enabled_ui(false, |ui| {
-              ui.drag_angle(&mut graph.angle);
+              ui.drag_angle(angle);
             });
           });
 
           ui.horizontal(|ui| {
-            ui.add(Slider::new(&mut graph.angle, 0.261..=0.785));
+            ui.add(Slider::new(angle, 0.261..=0.785));
             if ui.button("Reset").clicked() {
-              graph.angle = 0.436;
+              *angle = 0.436;
             }
           });
 
           ui.label("Wing size:");
           ui.horizontal(|ui| {
-            ui.add(Slider::new(&mut graph.arrow_head_length, 1.0..=60.0));
+            ui.add(Slider::new(arrow_head_length, 1.0..=60.0));
             if ui.button("Reset").clicked() {
-              graph.arrow_head_length = 20.0;
+              *arrow_head_length = 20.;
             }
           });
 
           ui.label("Base point:");
           ui.horizontal(|ui| {
-            ui.add(Slider::new(&mut graph.base_point, 1.0..=50.0));
+            ui.add(Slider::new(base_point, 1.0..=50.0));
             if ui.button("Reset").clicked() {
-              graph.base_point = 15.;
+              *base_point = 15.;
             }
           });
 
@@ -135,17 +151,17 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
 
           ui.label("Radius:");
           ui.horizontal(|ui| {
-            ui.add(Slider::new(&mut graph.radius, 7..=20));
+            ui.add(Slider::new(radius, 7.0..=20.0));
             if ui.button("Reset").clicked() {
-              graph.radius = 13;
+              *radius = 13.;
             }
           });
 
           ui.label("Path thickness:");
           ui.horizontal(|ui| {
-            ui.add(Slider::new(&mut graph.path_thickness, 1.5..=5.0));
+            ui.add(Slider::new(path_thickness, 1.5..=5.0));
             if ui.button("Reset").clicked() {
-              graph.path_thickness = 2.0;
+              *path_thickness = 2.0;
             }
           });
 
@@ -156,15 +172,15 @@ pub(crate) fn paint_ui(mode: &mut Mode, graph: &mut DijkstraGraph, mut bg_color:
             .striped(false)
             .show(ui, |ui|
             { ui.label("Point colour:");
-              ui.color_edit_button_rgb(&mut graph.point_color);
+              ui.color_edit_button_rgb(point_color);
               ui.end_row();
 
               ui.label("Line colour:");
-              ui.color_edit_button_rgb(&mut graph.line_color);
+              ui.color_edit_button_rgb(line_color);
               ui.end_row();
 
               ui.label("Background colour:");
-              ui.color_edit_button_rgb(&mut bg_color);
+              ui.color_edit_button_rgb(bg_color);
               ui.end_row();
             });
 

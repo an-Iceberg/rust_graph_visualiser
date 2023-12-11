@@ -2,7 +2,6 @@ mod graph;
 mod ui;
 mod utils;
 
-use crate::utils::Mode;
 use egui_macroquad::draw;
 use graph::*;
 use macroquad::prelude::*;
@@ -20,12 +19,19 @@ fn window_configuration() -> Conf
   };
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub(crate) enum Mode {
+  Move,
+  Point,
+  Line,
+  Path,
+}
+
 // FIX: path from 6 to 18 is wrong, there exist a much shorter one (point 10 seems to cause that somehow)
 #[macroquad::main(window_configuration)]
 async fn main()
 {
   let mut graph = DijkstraGraph::new();
-  let mut path: Option<Vec<u8>> = None;
   // let mut start: Option<usize> = None;
   // let mut end: Option<usize> = None;
   // This is the id of the point that the mouse is currently hovering over
@@ -78,7 +84,22 @@ async fn main()
 
     // --- GUI ---
     // TODO: style the GUI
-    ui::paint_ui(&mut mode, &mut graph, &mut bg_color);
+    ui::paint_ui(
+      &mut mode,
+      &mut graph,
+      &mut radius,
+      &mut angle,
+      &mut arrow_head_length,
+      &mut path_thickness,
+      &mut base_point,
+      &mut padding,
+      &mut selected_point_id,
+      &mut line_length,
+      &mut path_color,
+      &mut line_color,
+      &mut point_color,
+      &mut bg_color
+    );
 
     // ! dbg
     if is_key_pressed(KeyCode::P)

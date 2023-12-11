@@ -6,6 +6,7 @@ use macroquad::{
   shapes::{draw_circle, draw_rectangle, draw_hexagon, draw_circle_lines, draw_line}, text::{get_text_center, draw_text, measure_text}, math::{Vec4, Vec2}, color::{YELLOW, BLACK, MAGENTA, GREEN},
 };
 use std::ops::{Div, Mul};
+use crate::Mode;
 
 // TODO: rework everything
 // TODO: make points drawable as hexagons
@@ -124,7 +125,7 @@ pub(crate) fn handle_mouse_input(
     // Select a start point with left click
     (Path, true, _, _, false, Some(hovered_point_id), None) =>
     {
-      graph.set_start(Some(*hovered_point_id));
+      graph.set_start(*hovered_point_id);
       graph.clear_path();
     },
 
@@ -138,7 +139,7 @@ pub(crate) fn handle_mouse_input(
     // Select an end point with right click
     (Path, false, _, _, true, Some(hovered_point_id), None) =>
     {
-      graph.set_end(Some(*hovered_point_id));
+      graph.set_end(*hovered_point_id);
       graph.clear_path();
     },
 
@@ -165,18 +166,14 @@ pub(crate) fn paint_graph(
   point_color: &[f32;3]
 )
 {
-  // Paints lines
-  if !graph.lines.is_empty()
-  {
-    graph.paint_lines();
-    graph.paint_path();
-    graph.paint_arrow_heads();
-    graph.paint_line_lengths();
-  }
+  // Paint lines
+  paint_lines(graph, line_color, path_thickness);
+  paint_path(graph, path_color, path_thickness);
+  paint_arrow_heads(graph);
+  paint_line_lengths(graph, padding, line_color);
 
-  // Paints points
-  if !graph.points.is_empty()
-  { graph.paint_points(); }
+  // Paint points
+  paint_points(graph, radius, hovered_point_id, selected_point_id, point_color);
 
   // TODO: consider replacing this with Option::inspect
   // Paints start label
@@ -221,23 +218,23 @@ fn paint_label(text: &str, position: &Vec2, radius: &f32, padding: &u8)
 
 fn paint_path(graph: &DijkstraGraph, path_color: &[f32;3], path_thiccness: &f32)
 {
-  if let Some(path) = graph.get_path()
-  {
-    for (from, to) in path.iter().zip(path.iter().skip(1))
-    {
-      let Some(from_point) = graph.get(*from) else { continue; };
-      let Some(to_point) = graph.get(*to) else { continue; };
+  let path = graph.get_path().unwrap_or_else(|| vec![]);
 
+  path.iter().zip(path.iter().skip(1))
+    .map(|(from_id, to_id)| (graph.get(*from_id), graph.get(*to_id)))
+    .filter(|(from_option, to_option)| from_option.is_some() && to_option.is_some())
+    .map(|(from_option, to_option)| (from_option.unwrap(), to_option.unwrap()))
+    .for_each(|(from, to)|
+    {
       draw_line(
-        from_point.position().x(),
-        from_point.position().y(),
-        to_point.position().x(),
-        to_point.position().y(),
+        from.position.x,
+        from.position.y,
+        to.position.x,
+        to.position.y,
         *path_thiccness,
         Color::from_vec(Vec4::new(path_color[0],path_color[1],path_color[2], 1.,)),
       );
-    }
-  }
+    });
 }
 
 fn paint_points(
@@ -248,15 +245,16 @@ fn paint_points(
   point_color: &[f32;3]
 )
 {
-  // Painting all points with their ids in the center
-  for (id, point) in graph.points_iter().enumerate()
-  {
-    if let Some(point) = point
+  graph.points_iter()
+    .enumerate()
+    .filter(|(id, point)| point.is_some())
+    .map(|(id, point_option)| (id, point_option.unwrap()))
+    .for_each(|(id, point)|
     {
       // Drawing the points
       draw_circle(
-        point.position().x(),
-        point.position().y(),
+        point.position.x,
+        point.position.y,
         *radius,
         Color::from_vec(Vec4::new(point_color[0], point_color[1], point_color[2], 1_f32))
       );
@@ -266,13 +264,12 @@ fn paint_points(
       // Drawing the point id
       draw_text(
         id.to_string().as_str(),
-        point.position().x() - text_center.x,
-        point.position().y() - text_center.y,
+        point.position.x - text_center.x,
+        point.position.y - text_center.y,
         20.0,
         BLACK,
       );
-    }
-  }
+    });
 
   // Drawing the selected point differently
   if let Some(selected_point_id) = selected_point_id
@@ -280,8 +277,8 @@ fn paint_points(
     if let Some(point) = graph.get(*selected_point_id)
     {
       draw_circle(
-        point.position().x(),
-        point.position().y(),
+        point.position.x,
+        point.position.y,
         *radius, YELLOW
       );
     }
@@ -293,8 +290,8 @@ fn paint_points(
     if let Some(point) = graph.get(*hovered_point_id)
     {
       draw_circle_lines(
-        point.position().x(),
-        point.position().y(),
+        point.position.x,
+        point.position.y,
         *radius + 4_f32, 1_f32, MAGENTA
       );
     }
@@ -312,6 +309,8 @@ fn paint_arrow_heads(&self) {
                     x: from_point.position.x - to_point.position.x,
                     y: from_point.position.y - to_point.position.y,
                 };
+
+                direction.normalize();
 
                 // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
                 let arrow_head_location = Vec2 {
@@ -422,70 +421,50 @@ fn paint_arrow_heads(&self) {
 
 fn paint_lines(graph: &DijkstraGraph, line_color: &[f32;3], path_thickness: &f32)
 {
-  for point in graph.points_iter()
-  {
-    let Some(from) = point else { continue; };
-
-    for edge in from.edges().iter()
+  graph.lines_iter()
+    .for_each(|(from, _, to)|
     {
-      let Some(to) = graph.get(edge.destination()) else { continue; };
-
       draw_line(
-        from.position().x(),
-        from.position().y(),
-        to.position().x(),
-        to.position().y(),
+        from.position.x,
+        from.position.y,
+        to.position.x,
+        to.position.y,
         *path_thickness,
         Color::from_vec(Vec4::new(line_color[0], line_color[1], line_color[2], 1.0)),
       );
-    }
-  }
+    });
 }
 
-fn paint_line_lengths(graph: &DijkstraGraph, padding: u8, line_color: &[f32;3])
+fn paint_line_lengths(graph: &DijkstraGraph, padding: &u8, line_color: &[f32;3])
 {
-  for point in graph.points_iter()
-  {
-    let Some(from) = point else { continue; };
-
-    for edge in from.edges().iter()
+  graph.lines_iter()
+    .for_each(|(from, distance, to)|
     {
-      let Some(to) = graph.get(edge.destination()) else { continue; };
-
       let position = Vec2
       {
-        x: ((1.0 / 3.0) * from.position().x() + (2.0 / 3.0) * to.position().x()),
-        y: ((1.0 / 3.0) * from.position().y() + (2.0 / 3.0) * to.position().y()),
+        x: ((1.0 / 3.0) * from.position.x + (2.0 / 3.0) * to.position.x),
+        y: ((1.0 / 3.0) * from.position.y + (2.0 / 3.0) * to.position.y),
       };
 
-      let text_center = get_text_center(edge.distance().to_string().as_str(), None, 20, 1.0, 0.0);
-      let text_dimensions = measure_text(edge.distance().to_string().as_str(), None, 20, 1.0);
+      let text_center = get_text_center(distance.to_string().as_str(), None, 20, 1.0, 0.0);
+      let text_dimensions = measure_text(distance.to_string().as_str(), None, 20, 1.0);
 
       draw_pill(
         position.x - text_dimensions.width.div(2.0),
-        position.y - text_dimensions.height.div(2.0) - padding as f32,
+        position.y - text_dimensions.height.div(2.0) - *padding as f32,
         text_dimensions.width,
         text_dimensions.height + padding.mul(2) as f32,
         Color::from_vec(Vec4::new(line_color[0], line_color[1], line_color[2], 1.,)),
       );
 
       draw_text(
-        edge.distance().to_string().as_str(),
+        distance.to_string().as_str(),
         position.x - text_center.x,
         position.y - text_center.y,
         20.0,
         BLACK,
       );
-    }
-  }
-}
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub(crate) enum Mode {
-  Move,
-  Point,
-  Line,
-  Path,
+    });
 }
 
 // Tests
