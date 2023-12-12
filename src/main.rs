@@ -42,7 +42,7 @@ async fn main()
   let ui_width: f32 = 200.;
   let mut mode = Mode::Move;
 
-  let mut padding: u8 = 3;
+  let padding: u8 = 3;
   let mut angle: f32 = 0.436;
   let mut arrow_head_length: f32 = 20.;
   let mut radius: f32 = 13.;
@@ -50,14 +50,14 @@ async fn main()
   let mut path_thickness: f32 = 2.;
   let mut base_point: f32 = 15.;
 
-  let mut bg_color: [f32;3] = [0.25_f32, 0., 0.5];
-  let mut path_color: [f32;3] = [0., 1., 0.];
-  let mut line_color: [f32;3] = [1., 0.5, 0.];
-  let mut point_color: [f32;3] = [0., 1., 1.];
+  let mut bg_color: u32 = 0x400080;
+  let mut path_color: u32 = 0x00ff00;
+  let mut line_color: u32 = 0xff8000;
+  let mut point_color: u32 = 0x00ffff;
 
   loop
   {
-    clear_background(Color::from_vec(Vec4::new(bg_color[0], bg_color[1], bg_color[2], 1.)));
+    clear_background(Color::from_hex(bg_color));
 
     // Delete or backspace clears the graph of all points and lines
     if is_key_pressed(KeyCode::Backspace) || is_key_pressed(KeyCode::Delete)
@@ -73,7 +73,12 @@ async fn main()
       screen_height() - (2_f32 * radius),
     )
     {
+      hovered_point_id = graph.find_hovered_point(mouse_position().0, mouse_position().1, radius);
       utils::handle_mouse_input(
+        is_mouse_button_pressed(MouseButton::Left),
+        is_mouse_button_down(MouseButton::Left),
+        is_mouse_button_released(MouseButton::Left),
+        is_mouse_button_pressed(MouseButton::Right),
         &mode,
         &mut graph,
         &mut hovered_point_id,
@@ -116,7 +121,7 @@ async fn main()
       &angle,
       &base_point,
       &arrow_head_length,
-      &hovered_point_id,
+      &mut hovered_point_id,
       &selected_point_id,
       &path_color,
       &line_color,

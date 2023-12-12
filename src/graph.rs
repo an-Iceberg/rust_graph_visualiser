@@ -1,10 +1,5 @@
-use std::slice::Iter;
+use crate::utils::is_point_in_circle;
 
-use crate::utils;
-
-// TODO: add iterator over points
-// TODO: add iterator bfs
-// TODO: add iterator dfs
 // TODO: consider using a Vec<u8> to store the points
 /// ### Dijkstra Graph
 ///
@@ -15,7 +10,7 @@ pub(crate) struct DijkstraGraph
   ///
   /// Since we only allow 100 nodes and we identify them based on their id we can use the properties
   /// of an array to our advantage.
-  graph: [Option<DijkstraNode>; 100],
+  points: [Option<DijkstraNode>; 100],
 
   start: Option<usize>,
   end: Option<usize>
@@ -27,7 +22,7 @@ impl Default for DijkstraGraph
   {
     return DijkstraGraph
     {
-      graph:
+      points:
       [
         None, None, None, None, None, None, None, None, None, None,
         None, None, None, None, None, None, None, None, None, None,
@@ -53,43 +48,62 @@ impl DijkstraGraph
 
   pub fn clear(&mut self)
   {
-    for mut node in self.graph.iter_mut()
-    { node = &mut None; }
+    self.points = self.points.iter()
+      .map(|_| None)
+      .collect::<Vec<_>>()
+      .try_into()
+      .unwrap();
+
     self.start = None;
     self.end = None;
   }
 
   pub fn clear_path(&mut self)
   {
-    for mut node in self.graph.iter_mut()
-    {
-      if let Some(node) = node
-      { node.parent = None; }
-    }
+    self.points = self.points.iter()
+      .map(|point_option|
+      {
+        if point_option.is_some()
+        {
+          let mut point = point_option.clone().unwrap();
+          point.parent = None;
+          return Some(point);
+        }
+        else
+        {
+          return None;
+        }
+      })
+      .collect::<Vec<_>>()
+      .try_into()
+      .unwrap();
+
+    self.start = None;
+    self.end = None;
   }
 
   /// Returns the amount of nodes in the graph
   pub fn size(&self) -> usize
   {
     let mut size = 0;
-    self.graph.iter().for_each(|node| { if node.is_some() { size += 1; } });
+    self.points.iter().for_each(|node| { if node.is_some() { size += 1; } });
     return size;
   }
 
   pub fn add_point(&mut self, id: usize, x: f32, y: f32)
   {
     if id > 100 { return; }
-    if self.graph[id].is_none() { self.graph[id] = Some(DijkstraNode::new(x, y)); }
+    if self.points[id].is_none() { self.points[id] = Some(DijkstraNode::new(x, y)); }
   }
 
   /// Inserts a node at the first missing instance of the array
   pub fn append_point(&mut self, x: f32, y: f32)
   {
-    for (index, node_option) in self.graph.iter().enumerate()
+    for (index, node_option) in self.points.iter().enumerate()
     {
       if node_option.is_none()
       {
-        self.graph[index] = Some(DijkstraNode::new(x, y));
+        self.points[index] = Some(DijkstraNode::new(x, y));
         return;
       }
     }
@@ -98,7 +112,7 @@ impl DijkstraGraph
   pub fn remove_point(&mut self, id: usize)
   {
     if id > 100 { return; }
-    self.graph[id] = None;
+    self.points[id] = None;
   }
 
   /// Adds a line; if it already exists, the length gets updated
@@ -106,23 +120,34 @@ impl DijkstraGraph
   {
     if from > 100 || to > 100 { return; }
 
-    if let Some(node) = &mut self.graph[from]
-    { node.edges.push(Edge { destination: to, distance }); }
+    let Some(point) = self.points[from].as_mut() else { return; };
+
+    // Avoids duplicate edges
+    for edge in point.edges.iter_mut()
+    {
+      if edge.destination == to
+      {
+        edge.distance = distance;
+        return;
+      }
+    }
+
+    point.edges.push(Edge { destination: to, distance });
   }
 
   pub fn remove_line(&mut self, from: usize, to: usize)
   {
     if from > 100 || to > 100 { return; }
 
-    if let Some(node) = &mut self.graph[from]
-    {
-      if node.edges.get(to).is_some()
-      { node.edges.remove(to); }
-    }
+    let Some(from_point) = self.points[from].as_mut() else { return; };
+    from_point.edges.remove(to);
   }
 
   pub fn get(&self, id: usize) -> &Option<DijkstraNode>
-  { return &self.graph[id]; }
+  { return &self.points[id]; }
+
+  pub fn get_mut(&mut self, id: usize) -> &mut Option<DijkstraNode>
+  { return &mut self.points[id]; }
 
   pub fn start(&self) -> Option<usize>
   { return self.start; }
@@ -130,7 +155,6 @@ impl DijkstraGraph
   pub fn set_start(&mut self, start: usize)
   {
     if start > 100 { return; }
-
     self.start = Some(start);
   }
 
@@ -143,7 +167,6 @@ impl DijkstraGraph
   pub fn set_end(&mut self, end: usize)
   {
     if end > 100 { return; }
-
     self.end = Some(end);
   }
 
@@ -166,12 +189,12 @@ impl DijkstraGraph
     let mut current_node = self.start.unwrap();
     let mut path = vec![current_node];
 
-    for _ in 0..self.graph.len()
+    for _ in 0..self.points.len()
     {
-      if self.graph[current_node].is_none() { return None; }
-      if self.graph[current_node].as_ref().unwrap().parent.is_none() { return None; }
+      if self.points[current_node].is_none() { return None; }
+      if self.points[current_node].as_ref().unwrap().parent.is_none() { return None; }
 
-      current_node = self.graph[current_node].as_ref().unwrap().parent.unwrap();
+      current_node = self.points[current_node].as_ref().unwrap().parent.unwrap();
 
       path.push(current_node);
 
@@ -182,39 +205,46 @@ impl DijkstraGraph
   }
 
   pub fn points(&self) -> &[Option<DijkstraNode>; 100]
-  { return &self.graph; }
+  { return &self.points; }
 
   pub fn lines(&self) -> Vec<(usize, &DijkstraNode, u16, usize, &DijkstraNode)>
   {
-    let mut lines_iter = vec![];
+    let mut lines = vec![];
 
-    for (from_id, point_option) in self.graph.iter().enumerate()
-    {
-      let Some(from_point) = point_option else { continue; };
-
-      for edge in &from_point.edges
+    self.points.iter().enumerate()
+      .filter(|(_, option)| option.is_some())
+      .map(|(from_id, option)| (from_id, option.as_ref().unwrap()))
+      .for_each(|(from_id, from_point)|
       {
-        let Some(Some(to_point)) = self.graph.get(edge.destination) else { continue; };
+        // It would take 2× as many lines of code to implement this in a functional style
+        from_point.edges.iter()
+          .for_each(|edge|
+          {
+            let Some(Some(to_point)) = self.points.get(edge.destination) else { return; };
 
-        lines_iter.push((from_id, from_point, edge.distance, edge.destination, to_point));
-      }
-    }
+            lines.push((from_id, from_point, edge.distance, edge.destination, to_point));
+          });
+      });
 
-    return lines_iter;
+    return lines;
   }
 
   pub fn find_hovered_point(&mut self, mouse_x: f32, mouse_y: f32, radius: f32) -> Option<usize>
   {
-    for (index, node_option) in self.graph.iter().enumerate()
-    {
-      if let Some(node) = node_option
-      {
-        if utils::is_point_in_circle(mouse_x, mouse_y, node.position.x, node.position.y, radius)
-        { return Some(index); }
-      }
-    }
+    let mut point_id = None;
 
-    return None;
+    self.points.iter().enumerate()
+      .filter(|(_, option)| option.is_some())
+      .map(|(index, option)| (index, option.as_ref().unwrap()))
+      .for_each(|(index, point)|
+      {
+        if is_point_in_circle(mouse_x, mouse_y, point.x, point.y, radius)
+        {
+          point_id = Some(index);
+        }
+      });
+
+    return point_id;
   }
 
   // !dbg
@@ -228,14 +258,14 @@ impl DijkstraGraph
   pub fn print_graph_data(&self)
   {
     println!("Points:");
-    self.graph.iter().enumerate().for_each(|(index, node_option)|
+    self.points.iter().enumerate().for_each(|(index, node_option)|
     {
       if node_option.is_some()
       { print!("{} ", index); }
     });
 
     println!("Lines:");
-    self.graph.iter().enumerate().for_each(|(index, node_option)|
+    self.points.iter().enumerate().for_each(|(index, node_option)|
     {
       if let Some(node) = node_option
       {
@@ -382,10 +412,11 @@ impl DijkstraGraph
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct DijkstraNode
 {
-  pub position: Position,
+  pub x: f32,
+  pub y: f32,
   parent: Option<usize>,
   distance: Option<u16>,
   visited: bool,
@@ -398,72 +429,21 @@ impl DijkstraNode
   {
     DijkstraNode
     {
-      position: Position { x, y },
+      x,
+      y,
       parent: None,
       distance: None,
       visited: false,
       edges: vec![],
     }
   }
-
-  pub fn position(&self) -> Position
-  { return self.position; }
-
-  pub fn parent(&self) -> Option<usize>
-  { return self.parent; }
-
-  pub fn set_parent(&mut self, parent: Option<usize>)
-  { self.parent = parent; }
-
-  pub fn distance(&self) -> Option<u16>
-  { return self.distance; }
-
-  pub fn set_distance(&mut self, distance: Option<u16>)
-  { self.distance = distance; }
-
-  pub fn visited(&self) -> bool
-  { return self.visited; }
-
-  pub fn set_visited(&mut self, visited: bool)
-  { self.visited = visited; }
-
-  pub fn edges(&self) -> &Vec<Edge>
-  { return &self.edges; }
 }
 
-#[derive(Clone, Copy)]
-pub(crate) struct Position
-{
-  pub x: f32,
-  pub y: f32,
-}
-
-impl Position
-{
-  pub fn get(&self) -> (f32, f32)
-  { return (self.x, self.y); }
-
-  pub fn set(&mut self, x: f32, y: f32)
-  { self.x = x; self.y = y; }
-}
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct Edge
 {
   destination: usize,
   distance: u16,
-}
-
-impl Edge
-{
-  pub fn destination(&self) -> usize
-  { return self.destination; }
-
-  pub fn distance(&self) -> u16
-  { return self.distance; }
-
-  pub fn set_distance(&mut self, distance: u16)
-  { self.distance = distance; }
 }
 
 // Tests
