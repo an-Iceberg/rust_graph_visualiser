@@ -3,13 +3,12 @@ use macroquad::{
   prelude::{
     mouse_position, Color,
   },
-  shapes::{draw_circle, draw_rectangle, draw_circle_lines, draw_line, draw_triangle}, text::{get_text_center, draw_text, measure_text}, math::{Vec4, Vec2}, color::{YELLOW, BLACK, MAGENTA, GREEN, RED},
+  shapes::{draw_circle, draw_rectangle, draw_circle_lines, draw_line, draw_triangle, draw_hexagon}, text::{get_text_center, draw_text, measure_text}, math::{Vec4, Vec2}, color::{YELLOW, BLACK, MAGENTA, GREEN, RED},
 };
 use std::ops::{Div, Mul};
 use crate::Mode;
 
-// TODO: rework everything
-// TODO: make points drawable as hexagons
+// TODO: HEXAGONS
 
 pub(crate) fn is_point_in_circle(
   point_x: f32, point_y: f32,
@@ -68,7 +67,6 @@ pub(crate) fn handle_mouse_input(
   )
   {
     // --- MOVE ---
-    // FIX: delete line
 
     // Select a point to be moved around
     (Move, true, _, _, false, Some(hovered_point_id), _) =>
@@ -258,15 +256,8 @@ fn paint_points(
     .for_each(|(id, point)|
     {
       // Drawing the points
-      draw_circle(
-        point.x,
-        point.y,
-        *radius,
-        if Some(id) == *selected_point_id_option
-        { YELLOW }
-        else
-        { Color::from_hex(*point_color) }
-      );
+      draw_circle(point.x, point.y, *radius, if Some(id) == *selected_point_id_option { YELLOW } else { Color::from_hex(*point_color) });
+      // draw_hexagon(point.x, point.y, *radius, 1.5, true, Color::from_hex(0xffffff), Color::from_hex(*point_color));
 
       let text_center = get_text_center(id.to_string().as_str(), None, 20, 1.0, 0.0);
 
@@ -297,7 +288,6 @@ fn paint_points(
   *hovered_point_id_option = None;
 }
 
-// FIX: draw arrow heads properly
 fn paint_arrow_heads(
   graph: &DijkstraGraph,
   radius: &f32,

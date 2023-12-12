@@ -27,6 +27,7 @@ pub(crate) enum Mode {
   Path,
 }
 
+// TODO: HEXAGONS
 // FIX: path from 6 to 18 is wrong, there exist a much shorter one (point 10 seems to cause that somehow)
 #[macroquad::main(window_configuration)]
 async fn main()

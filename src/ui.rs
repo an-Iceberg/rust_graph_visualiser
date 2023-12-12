@@ -8,6 +8,7 @@ use macroquad::time::get_fps;
 // TODO: make option to switch to hexagons for points
 // TODO: edit colour with hex values
 // TODO: make colours editable
+// TODO: HEXAGONS
 
 pub(crate) fn paint_ui(
   mode: &mut Mode,
