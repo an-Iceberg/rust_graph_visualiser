@@ -27,15 +27,16 @@ pub(crate) enum Mode {
   Path,
 }
 
-// TODO: extract some variables as const
 pub(crate) const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+pub(crate) const AUTHORS: Option<&str> = option_env!("CARGO_PKG_AUTHORS");
 pub(crate) const UI_WIDTH: f32 = 200.;
 pub(crate) const PADDING: u8 = 3;
 pub(crate) const BG_COLOR: u32 = 0x400080;
 pub(crate) const PATH_COLOR: u32 = 0x00ff00;
-pub(crate) const LINE_COLOR: u32 = 0xff8000;
-pub(crate) const POINT_COLOR: u32 = 0x00ffff;
-pub(crate) const LINE_LENGTH_COLOR: u32 = 0xc0c0c0;
+pub(crate) const LINE_COLOR: u32 = 0x00c0c0;
+pub(crate) const POINT_COLOR: u32 = 0xff8000;
+pub(crate) const LINE_LENGTH_COLOR: u32 = 0xc09a9a;
+pub(crate) const  UI_SPACE: f32 = 225.;
 
 #[macroquad::main(window_configuration)]
 async fn main()

@@ -1,9 +1,10 @@
-use crate::{graph::DijkstraGraph, Mode, VERSION};
+use crate::{graph::DijkstraGraph, Mode, VERSION, AUTHORS, UI_SPACE};
+
 use egui_macroquad::{
-  egui::{epaint::Shadow, Align2, Rounding, Slider, Vec2, Visuals, Window, Response, Ui, Sense, WidgetInfo, WidgetType, lerp, pos2, vec2, Widget},
+  egui::{epaint::Shadow, Align2, Rounding, Slider, Vec2, Visuals, Window, Color32, Stroke},
   ui,
 };
-use macroquad::time::get_fps;
+
 
 // TODO: edit colour with hex values
 // TODO: make colours editable
@@ -22,7 +23,6 @@ pub(crate) fn paint_ui(
 )
 {
   ui(|egui_context| {
-    // Disabling all shadows
     egui_context.set_visuals(Visuals
     {
       window_shadow: Shadow::NONE,
@@ -33,12 +33,16 @@ pub(crate) fn paint_ui(
         sw: 10.,
         se: 0.,
       },
+      window_fill: Color32::from_rgb(32, 0, 64),
+      window_stroke: Stroke::new(2., Color32::from_rgb(0, 192, 192)),
+      override_text_color: Some(Color32::from_rgb(216, 167, 215)),
+      // widgets: Widgets::style(&self, response),
       ..Default::default()
     });
 
     // egui ❤ macroquad
     Window::new("Rust Graph Visualiser")
-      .anchor(Align2::RIGHT_TOP, Vec2::new(0., 10.))
+      .anchor(Align2::RIGHT_TOP, Vec2::new(-1.5, 10.))
       .constrain(true)
       .collapsible(false)
       .movable(false)
@@ -46,6 +50,13 @@ pub(crate) fn paint_ui(
       .fixed_size(Vec2::new(200., 0.))
       .show(egui_context, |ui|
       {
+        ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::from_rgb(0, 64, 64);
+        ui.style_mut().visuals.widgets.inactive.bg_fill = Color32::from_rgb(0, 64, 64);
+        ui.style_mut().visuals.widgets.hovered.weak_bg_fill = Color32::from_rgb(0, 128, 128);
+        ui.style_mut().visuals.widgets.hovered.bg_fill = Color32::from_rgb(0, 128, 128);
+        ui.style_mut().visuals.widgets.active.weak_bg_fill = Color32::from_rgb(0, 192, 192);
+        ui.style_mut().visuals.widgets.active.bg_fill = Color32::from_rgb(0, 192, 192);
+
         ui.label("Select a mode:");
         ui.horizontal(|ui|
         {
@@ -78,10 +89,15 @@ pub(crate) fn paint_ui(
           Mode::Path =>
           {
             ui.separator();
-            ui.add_enabled_ui(graph.start().is_some() && graph.end().is_some(), |ui|
+            ui.horizontal(|ui|
             {
-              if ui.button("Find shortest path").clicked()
-              { graph.find_shortest_path(); }
+              ui.add_enabled_ui(graph.start().is_some() && graph.end().is_some(), |ui|
+              {
+                if ui.button("Find shortest path").clicked()
+                { graph.find_shortest_path(); }
+              });
+              if ui.button("Clear path").clicked()
+              { graph.clear_path(); }
             });
             /*
             ui.horizontal(|ui|
@@ -98,11 +114,11 @@ pub(crate) fn paint_ui(
 
         ui.add_space(match (&mode, selected_point_id)
         {
-          (Mode::Move, _) => 215.,
-          (Mode::Line, None) => 182.,
-          (Mode::Line, Some(_)) => 140.,
-          (Mode::Point, _) => 201.,
-          (Mode::Path, _) => 136.
+          (Mode::Move, _) => UI_SPACE,
+          (Mode::Line, None) => UI_SPACE-33.,
+          (Mode::Line, Some(_)) => UI_SPACE-75.,
+          (Mode::Point, _) => UI_SPACE-14.,
+          (Mode::Path, _) => UI_SPACE-58.
         });
 
         ui.separator();
@@ -126,6 +142,7 @@ pub(crate) fn paint_ui(
 
         ui.horizontal(|ui|
         {
+          // TODO: print angle as plain text
           ui.label("Angle:");
           ui.add_enabled_ui(false, |ui|
           { ui.drag_angle(angle); });
@@ -169,11 +186,7 @@ pub(crate) fn paint_ui(
 
         ui.separator();
 
-        ui.horizontal(|ui|
-        {
-          ui.label("Hexagons:");
-          ui.add(toggle(hexagons));
-        });
+        ui.checkbox(hexagons, "Hexagons");
 
         /*
         ui.separator();
@@ -199,48 +212,14 @@ pub(crate) fn paint_ui(
 
         ui.separator();
 
+        // --- CREDITS (!important) ---
         ui.horizontal(|ui|
         {
           ui.label(format!("v{}", VERSION.unwrap_or("unknown")));
           ui.separator();
-          ui.label(format!("FPS:{}", get_fps()));
+          ui.label("Made by");
+          ui.hyperlink_to(format!("{}", AUTHORS.unwrap_or("unknown")), "https://github.com/an-Iceberg");
         });
       });
   });
 }
-
-fn toggle_ui(ui: &mut Ui, on: &mut bool) -> Response
-{
-  let desired_size = ui.spacing().interact_size.y * vec2(2.0, 1.0);
-  let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
-  if response.clicked()
-  {
-    *on = !*on;
-    response.mark_changed();
-  }
-  response.widget_info(|| WidgetInfo::selected(WidgetType::Checkbox, *on, ""));
-
-  if ui.is_rect_visible(rect)
-  {
-    let how_on = ui.ctx().animate_bool(response.id, *on);
-    let visuals = ui.style().interact_selectable(&response, *on);
-    let rect = rect.expand(visuals.expansion);
-    let radius = 0.5 * rect.height();
-    ui.painter().rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
-    let circle_x = lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
-    let center = pos2(circle_x, rect.center().y);
-    ui.painter().circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
-  }
-
-  return response;
-}
-
-// A wrapper that allows the more idiomatic usage pattern: `ui.add(toggle(&mut my_bool))`
-/// iOS-style toggle switch.
-///
-/// ## Example:
-/// ``` ignore
-/// ui.add(toggle(&mut my_bool));
-/// ```
-pub(crate) fn toggle(on: &mut bool) -> impl Widget + '_
-{ move |ui: &mut Ui| toggle_ui(ui, on) }

@@ -1,7 +1,9 @@
 [package]
 name = "rust_graph_visualiser"
-version = "1.9.0"
+version = "1.9.2"
 edition = "2021"
+authors = ["Sandra"]
+repository = "https://github.com/an-Iceberg/rust_graph_visualiser"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

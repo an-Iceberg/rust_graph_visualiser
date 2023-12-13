@@ -310,6 +310,7 @@ fn shortest_path_large_b()
   let mut graph = DijkstraGraph::new();
   graph.insert_large_graph();
 
+  // TODO: add second valid path
   let should_path = vec![6, 4, 1, 2, 16, 17, 18];
 
   graph.set_start(6);

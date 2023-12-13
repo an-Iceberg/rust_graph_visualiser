@@ -3,7 +3,7 @@ use macroquad::{
   prelude::{
     mouse_position, Color,
   },
-  shapes::{draw_circle, draw_rectangle, draw_circle_lines, draw_line, draw_triangle, draw_hexagon}, text::{get_text_center, draw_text, measure_text}, math::{Vec4, Vec2}, color::{YELLOW, BLACK, MAGENTA, GREEN, RED},
+  shapes::{draw_circle, draw_rectangle, draw_circle_lines, draw_line, draw_triangle, draw_hexagon}, text::{get_text_center, draw_text, measure_text}, math::Vec2, color::{YELLOW, MAGENTA, GREEN},
 };
 use std::ops::{Div, Mul};
 use crate::Mode;

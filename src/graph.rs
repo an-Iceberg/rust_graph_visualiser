@@ -239,7 +239,6 @@ impl DijkstraGraph
         if !neighbour.visited
         { unvisited_points.push(edge.destination); }
 
-        // TODO: if both are same then toss coin
         if neighbour.distance.is_none() || neighbour.distance.unwrap() > possibly_lower_goal || (neighbour.distance.unwrap() == possibly_lower_goal && rand::random())
         {
           neighbour.distance = Some(possibly_lower_goal);
@@ -440,7 +439,7 @@ impl DijkstraGraph
     self.add_line(13, 2, 1);
     self.add_line(15, 8, 10);
     self.add_line(14, 8, 14);
-    self.add_line(1, 18, 10);
+    self.add_line(1, 18, 10); // TODO: reduce length to 9
     self.add_line(17, 18, 3);
     self.add_line(16, 17, 2);
     self.add_line(7, 3, 1);
