@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::utils::is_point_in_circle;
 
 // TODO: consider using a Vec<u8> to store the points
@@ -43,10 +45,10 @@ impl Default for DijkstraGraph
 
 impl DijkstraGraph
 {
-  pub fn new() -> DijkstraGraph
+  pub(crate) fn new() -> DijkstraGraph
   { return DijkstraGraph { ..DijkstraGraph::default() }; }
 
-  pub fn clear(&mut self)
+  pub(crate) fn clear(&mut self)
   {
     self.points = self.points.iter()
       .map(|_| None)
@@ -58,46 +60,32 @@ impl DijkstraGraph
     self.end = None;
   }
 
-  pub fn clear_path(&mut self)
+  pub(crate) fn clear_path(&mut self)
   {
-    self.points = self.points.iter()
-      .map(|point_option|
-      {
-        if point_option.is_some()
-        {
-          let mut point = point_option.clone().unwrap();
-          point.parent = None;
-          return Some(point);
-        }
-        else
-        {
-          return None;
-        }
-      })
-      .collect::<Vec<_>>()
-      .try_into()
-      .unwrap();
-
-    self.start = None;
-    self.end = None;
+    for option in self.points.iter_mut()
+    {
+      let Some(point) = option.as_mut() else { continue; };
+      point.parent = None;
+      point.visited = false;
+    }
   }
 
   /// Returns the amount of nodes in the graph
-  pub fn size(&self) -> usize
+  pub(crate) fn size(&self) -> usize
   {
     let mut size = 0;
     self.points.iter().for_each(|node| { if node.is_some() { size += 1; } });
     return size;
   }
 
-  pub fn add_point(&mut self, id: usize, x: f32, y: f32)
+  pub(crate) fn add_point(&mut self, id: usize, x: f32, y: f32)
   {
     if id > 100 { return; }
     if self.points[id].is_none() { self.points[id] = Some(DijkstraNode::new(x, y)); }
   }
 
   /// Inserts a node at the first missing instance of the array
-  pub fn append_point(&mut self, x: f32, y: f32)
+  pub(crate) fn append_point(&mut self, x: f32, y: f32)
   {
     for (index, node_option) in self.points.iter().enumerate()
     {
@@ -109,14 +97,14 @@ impl DijkstraGraph
     }
   }
 
-  pub fn remove_point(&mut self, id: usize)
+  pub(crate) fn remove_point(&mut self, id: usize)
   {
     if id > 100 { return; }
     self.points[id] = None;
   }
 
   /// Adds a line; if it already exists, the length gets updated
-  pub fn add_line(&mut self, from: usize, to: usize, distance: u16)
+  pub(crate) fn add_line(&mut self, from: usize, to: usize, distance: u16)
   {
     if from > 100 || to > 100 { return; }
 
@@ -135,7 +123,7 @@ impl DijkstraGraph
     point.edges.push(Edge { destination: to, distance });
   }
 
-  pub fn remove_line(&mut self, from: usize, to: usize)
+  pub(crate) fn remove_line(&mut self, from: usize, to: usize)
   {
     if from > 100 || to > 100 { return; }
 
@@ -143,50 +131,115 @@ impl DijkstraGraph
     from_point.edges.remove(to);
   }
 
-  pub fn get(&self, id: usize) -> &Option<DijkstraNode>
+  pub(crate) fn get(&self, id: usize) -> &Option<DijkstraNode>
   { return &self.points[id]; }
 
-  pub fn get_mut(&mut self, id: usize) -> &mut Option<DijkstraNode>
+  pub(crate) fn get_mut(&mut self, id: usize) -> &mut Option<DijkstraNode>
   { return &mut self.points[id]; }
 
-  pub fn start(&self) -> Option<usize>
+  pub(crate) fn start(&self) -> Option<usize>
   { return self.start; }
 
-  pub fn set_start(&mut self, start: usize)
+  pub(crate) fn set_start(&mut self, start: usize)
   {
     if start > 100 { return; }
     self.start = Some(start);
   }
 
-  pub fn clear_start(&mut self)
+  pub(crate) fn clear_start(&mut self)
   { self.start = None; }
 
-  pub fn end(&self) -> Option<usize>
+  pub(crate) fn end(&self) -> Option<usize>
   { return self.end; }
 
-  pub fn set_end(&mut self, end: usize)
+  pub(crate) fn set_end(&mut self, end: usize)
   {
     if end > 100 { return; }
     self.end = Some(end);
   }
 
-  pub fn clear_end(&mut self)
+  pub(crate) fn clear_end(&mut self)
   { self.end = None; }
 
   /// Returns true if the shortest path has been found
-  pub fn find_shortest_path(&mut self) -> bool
+  pub(crate) fn find_shortest_path(&mut self)
   {
-    if self.start.is_none() || self.end.is_none() { return false; }
+    if self.start.is_none() || self.end.is_none() || (self.start.is_none() && self.end.is_none()) { return; }
+    if self.points[self.start.unwrap()].is_none() { self.start = None; return; }
+    if self.points[self.end.unwrap()].is_none() { self.end = None; return; }
 
-    todo!();
+    self.clear_path();
+
+    self.points[self.start.unwrap()].as_mut().unwrap().distance = Some(0);
+    self.points[self.start.unwrap()].as_mut().unwrap().parent = Some(self.start.unwrap());
+
+    let mut unvisited_points = vec![];
+    unvisited_points.push(self.start.unwrap());
+    let mut current_id;
+    let mut path_length: u16; // TODO: this
+
     // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
+    while !unvisited_points.is_empty()
+    {
+      /*
+      unvisited_points.sort_by(|a, b|
+      {
+        // It is basically impossible, that unvisited_points contains ids that aren't in the graph
+        let distance_a = self.points[*a].as_ref().unwrap().distance;
+        let distance_b = self.points[*b].as_ref().unwrap().distance;
+
+        // Distance = None serves as the infinite value
+        match (distance_a, distance_b)
+        {
+          (None, None) => return Ordering::Equal,
+          (Some(_), None) => return Ordering::Less,
+          (None, Some(_)) => return Ordering::Greater,
+          (Some(dist_a), Some(dist_b)) => return dist_a.cmp(&dist_b),
+        };
+      });
+      */
+
+      /*
+      // Removing all points that have been marked as visited
+      unvisited_points.retain(|id| !self.points[*id].as_ref().unwrap().visited);
+      if unvisited_points.is_empty() { break; }
+      */
+
+      current_id = *unvisited_points.first().unwrap();
+      unvisited_points.remove(0);
+
+      if self.points[current_id].is_none() { continue; }
+
+      let current_point = self.points[current_id].as_mut().unwrap();
+      current_point.visited = true;
+      let current_point_distance = current_point.distance.clone().unwrap();
+      let edges = current_point.edges.clone();
+
+      // drop(current_point);
+
+      for edge in edges
+      {
+        let Some(neighbour) = self.points[edge.destination].as_mut() else { return; };
+
+        if !neighbour.visited
+        { unvisited_points.push(edge.destination); }
+
+        let possibly_lower_goal = current_point_distance + edge.distance;
+
+        if neighbour.distance.is_none() || neighbour.distance.unwrap() > possibly_lower_goal
+        {
+          neighbour.distance = Some(possibly_lower_goal);
+          neighbour.parent = Some(current_id);
+        }
+      }
+    }
   }
 
-  pub fn get_path(&self) -> Option<Vec<usize>>
+  pub(crate) fn get_path(&self) -> Option<Vec<usize>>
   {
-    if self.start.is_none() || self.end.is_none() { return None; }
+    if self.start.is_none() || self.end.is_none() || (self.start.is_none() && self.end.is_none()) { return None; }
 
-    let mut current_node = self.start.unwrap();
+    let mut current_node = self.end.unwrap();
     let mut path = vec![current_node];
 
     for _ in 0..self.points.len()
@@ -198,16 +251,18 @@ impl DijkstraGraph
 
       path.push(current_node);
 
-      if current_node == self.end.unwrap() { break; }
+      if current_node == self.start.unwrap() { break; }
     }
+
+    path.reverse();
 
     return Some(path);
   }
 
-  pub fn points(&self) -> &[Option<DijkstraNode>; 100]
+  pub(crate) fn points(&self) -> &[Option<DijkstraNode>; 100]
   { return &self.points; }
 
-  pub fn lines(&self) -> Vec<(usize, &DijkstraNode, u16, usize, &DijkstraNode)>
+  pub(crate) fn lines(&self) -> Vec<(usize, &DijkstraNode, u16, usize, &DijkstraNode)>
   {
     let mut lines = vec![];
 
@@ -229,7 +284,7 @@ impl DijkstraGraph
     return lines;
   }
 
-  pub fn find_hovered_point(&mut self, mouse_x: f32, mouse_y: f32, radius: f32) -> Option<usize>
+  pub(crate) fn find_hovered_point(&mut self, mouse_x: f32, mouse_y: f32, radius: f32) -> Option<usize>
   {
     let mut point_id = None;
 
@@ -248,31 +303,14 @@ impl DijkstraGraph
   }
 
   // !dbg
-  pub fn print_path(&self)
+  pub(crate) fn print_graph_data(&self)
   {
-    let Some(path) = self.get_path() else { return; };
-    println!("{:?}", path);
-  }
-
-  // !dbg
-  pub fn print_graph_data(&self)
-  {
-    println!("Points:");
-    self.points.iter().enumerate().for_each(|(index, node_option)|
-    {
-      if node_option.is_some()
-      { print!("{} ", index); }
-    });
-
-    println!("Lines:");
-    self.points.iter().enumerate().for_each(|(index, node_option)|
-    {
-      if let Some(node) = node_option
+    println!("Graph data:");
+    self.lines().iter()
+      .for_each(|(from_id, _, distance, to_id, _)|
       {
-        node.edges.iter().for_each(|edge|
-        { print!("{}->{} ", index, edge.destination); });
-      }
-    });
+        println!("  {}--{}-->{}", from_id, distance, to_id);
+      });
 
     match self.start
     {
@@ -285,10 +323,16 @@ impl DijkstraGraph
       Some(id) => println!("End: {}", id),
       None => println!("End: None"),
     }
+
+    match self.get_path()
+    {
+      Some(path) => println!("Path: {:?}", path),
+      None => println!("Path: None")
+    }
   }
 
   /// Replaces the current graph with a small one
-  pub fn insert_small_graph(&mut self)
+  pub(crate) fn insert_small_graph(&mut self)
   {
     self.clear();
 
@@ -317,7 +361,7 @@ impl DijkstraGraph
   }
 
   /// Replaces the current graph with a medium-sized one
-  pub fn insert_medium_graph(&mut self)
+  pub(crate) fn insert_medium_graph(&mut self)
   {
     self.clear();
 
@@ -353,7 +397,7 @@ impl DijkstraGraph
   }
 
   /// Replaces the current graph with a large one
-  pub fn insert_large_graph(&mut self)
+  pub(crate) fn insert_large_graph(&mut self)
   {
     self.clear();
 
@@ -415,8 +459,8 @@ impl DijkstraGraph
 #[derive(Clone, Debug)]
 pub(crate) struct DijkstraNode
 {
-  pub x: f32,
-  pub y: f32,
+  pub(crate) x: f32,
+  pub(crate) y: f32,
   parent: Option<usize>,
   distance: Option<u16>,
   visited: bool,

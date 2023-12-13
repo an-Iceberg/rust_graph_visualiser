@@ -1,4 +1,4 @@
-use crate::graph::DijkstraGraph;
+use crate::{graph::DijkstraGraph, PADDING, LINE_COLOR, POINT_COLOR, PATH_COLOR, BG_COLOR, LINE_LENGTH_COLOR};
 use macroquad::{
   prelude::{
     mouse_position, Color,
@@ -158,32 +158,29 @@ pub(crate) fn paint_graph(
   graph: &DijkstraGraph,
   radius: &f32,
   path_thickness: &f32,
-  padding: &u8,
   angle: &f32,
   base_point: &f32,
   arrow_head_length: &f32,
   hovered_point_id: &mut Option<usize>,
   selected_point_id: &Option<usize>,
-  path_color: &u32,
-  line_color: &u32,
-  point_color: &u32
+  hexagons: &bool,
 )
 {
   // Paint lines
-  paint_lines(graph, line_color, path_thickness, base_point, radius);
-  paint_path(graph, path_color, path_thickness);
-  paint_arrow_heads(graph, radius, angle, arrow_head_length, base_point, line_color);
-  paint_line_lengths(graph, padding);
+  paint_lines(graph, path_thickness, base_point, radius);
+  paint_path(graph, path_thickness);
+  paint_arrow_heads(graph, radius, angle, arrow_head_length, base_point);
+  paint_line_lengths(graph);
 
   // Paint points
-  paint_points(graph, radius, hovered_point_id, selected_point_id, point_color);
+  paint_points(graph, radius, hovered_point_id, selected_point_id, hexagons);
 
   // TODO: consider replacing this with Option::inspect
   // Paints start label
   if let Some(start_id) = graph.start()
   {
     if let Some(start_point) = graph.get(start_id)
-    { paint_label("Start", start_point.x, start_point.y, &radius, &padding); }
+    { paint_label("Start", start_point.x, start_point.y, &radius); }
   }
 
   // TODO: consider replacing this with Option::inspect
@@ -191,12 +188,12 @@ pub(crate) fn paint_graph(
   if let Some(end_id) = graph.end()
   {
     if let Some(end_point) = graph.get(end_id)
-    { paint_label("End", end_point.x, end_point.y, &radius, &padding); }
+    { paint_label("End", end_point.x, end_point.y, &radius); }
   }
 }
 
 /// The `position` is the center of the point over which the label is painted.
-fn paint_label(text: &str, x: f32, y: f32, radius: &f32, padding: &u8)
+fn paint_label(text: &str, x: f32, y: f32, radius: &f32)
 {
   let text_center = get_text_center(text, None, 20, 1.0, 0.0);
   let text_dimensions = measure_text(text, None, 20, 1.0);
@@ -204,24 +201,24 @@ fn paint_label(text: &str, x: f32, y: f32, radius: &f32, padding: &u8)
   // A 2 pixel gap between the label and the point is hard-coded
   draw_pill(
     x - text_dimensions.width.div(2.0),
-    y - text_dimensions.height - radius - padding.mul(2) as f32 - 2.0,
+    y - text_dimensions.height - radius - PADDING.mul(2) as f32 - 2.0,
     text_dimensions.width,
-    text_dimensions.height + padding.mul(2) as f32,
+    text_dimensions.height + PADDING.mul(2) as f32,
     GREEN,
   );
 
   draw_text(
     text,
     x - text_center.x,
-    y - text_center.y - radius - text_dimensions.height.div(2.0) - *padding as f32 - 2.0,
+    y - text_center.y - radius - text_dimensions.height.div(2.0) - PADDING as f32 - 2.0,
     20.0,
-    Color::from_rgba(20, 0, 40, 255),
+    Color::from_hex(BG_COLOR)
   );
 }
 
-fn paint_path(graph: &DijkstraGraph, path_color: &u32, path_thiccness: &f32)
+fn paint_path(graph: &DijkstraGraph, path_thiccness: &f32)
 {
-  let path = graph.get_path().unwrap_or_else(|| vec![]);
+  let Some(path) = graph.get_path() else { return; };
 
   path.iter().zip(path.iter().skip(1))
     .map(|(from_id, to_id)| (graph.get(*from_id), graph.get(*to_id)))
@@ -234,8 +231,8 @@ fn paint_path(graph: &DijkstraGraph, path_color: &u32, path_thiccness: &f32)
         from.y,
         to.x,
         to.y,
-        *path_thiccness,
-        Color::from_hex(*path_color),
+        *path_thiccness + 2.,
+        Color::from_hex(PATH_COLOR),
       );
     });
 }
@@ -245,7 +242,7 @@ fn paint_points(
   radius: &f32,
   hovered_point_id_option: &mut Option<usize>,
   selected_point_id_option: &Option<usize>,
-  point_color: &u32
+  hexagons: &bool
 )
 {
   graph.points()
@@ -256,8 +253,10 @@ fn paint_points(
     .for_each(|(id, point)|
     {
       // Drawing the points
-      draw_circle(point.x, point.y, *radius, if Some(id) == *selected_point_id_option { YELLOW } else { Color::from_hex(*point_color) });
-      // draw_hexagon(point.x, point.y, *radius, 1.5, true, Color::from_hex(0xffffff), Color::from_hex(*point_color));
+      if *hexagons
+      { draw_hexagon(point.x, point.y, *radius, 0., true, Color::from_hex(0xffffff), Color::from_hex(POINT_COLOR)); }
+      else
+      { draw_circle(point.x, point.y, *radius, if Some(id) == *selected_point_id_option { YELLOW } else { Color::from_hex(POINT_COLOR) }); }
 
       let text_center = get_text_center(id.to_string().as_str(), None, 20, 1.0, 0.0);
 
@@ -267,7 +266,7 @@ fn paint_points(
         point.x - text_center.x,
         point.y - text_center.y,
         20.0,
-        BLACK,
+        Color::from_hex(BG_COLOR)
       );
     });
 
@@ -294,7 +293,6 @@ fn paint_arrow_heads(
   angle: &f32,
   arrow_head_length: &f32,
   base_point: &f32,
-  line_color: &u32
 )
 {
   graph.lines()
@@ -306,12 +304,9 @@ fn paint_arrow_heads(
         x: from.x - to.x,
         y: from.y - to.y
       };
-
       let direction_length = direction.length();
-
       direction = direction.normalize();
 
-      // ? Maybe use arrow_head_length instead of direction.length()
       // Calculating the tip of the triangle that touches the node (position + (direction * (radius / length)))
       let arrow_head_location = Vec2
       {
@@ -352,7 +347,6 @@ fn paint_arrow_heads(
         Source: https://math.stackexchange.com/questions/1314006/drawing-an-arrow
       */
 
-      // TODO: extract common stuff from these
       // Left arrow head wing
       draw_triangle(
         arrow_head_location,
@@ -362,7 +356,7 @@ fn paint_arrow_heads(
           x: arrow_head_location.x + ((arrow_head_length / direction_length) * (((from.x - to.x) * angle.cos()) - ((from.y - to.y) * angle.sin()))),
           y: arrow_head_location.y + ((arrow_head_length / direction_length) * (((from.y - to.y) * angle.cos()) + ((from.x - to.x) * angle.sin()))),
         },
-        Color::from_hex(*line_color)
+        Color::from_hex(LINE_COLOR)
       );
 
       // Right arrow head wing
@@ -374,12 +368,12 @@ fn paint_arrow_heads(
           x: arrow_head_location.x + ((arrow_head_length / direction_length) * (((from.x - to.x) * angle.cos()) + ((from.y - to.y) * angle.sin()))),
           y: arrow_head_location.y + ((arrow_head_length / direction_length) * (((from.y - to.y) * angle.cos()) - ((from.x - to.x) * angle.sin()))),
         },
-        Color::from_hex(*line_color)
+        Color::from_hex(LINE_COLOR)
       );
     });
 }
 
-fn paint_lines(graph: &DijkstraGraph, line_color: &u32, path_thickness: &f32, base_point: &f32, radius: &f32)
+fn paint_lines(graph: &DijkstraGraph, path_thickness: &f32, base_point: &f32, radius: &f32)
 {
   graph.lines()
     .iter()
@@ -399,12 +393,12 @@ fn paint_lines(graph: &DijkstraGraph, line_color: &u32, path_thickness: &f32, ba
         to.x - back_direction.x,
         to.y - back_direction.y,
         *path_thickness,
-        Color::from_hex(*line_color)
+        Color::from_hex(LINE_COLOR)
       );
     });
 }
 
-fn paint_line_lengths(graph: &DijkstraGraph, padding: &u8)
+fn paint_line_lengths(graph: &DijkstraGraph)
 {
   graph.lines()
     .iter()
@@ -421,10 +415,10 @@ fn paint_line_lengths(graph: &DijkstraGraph, padding: &u8)
 
       draw_pill(
         position.x - text_dimensions.width.div(2.0),
-        position.y - text_dimensions.height.div(2.0) - *padding as f32,
+        position.y - text_dimensions.height.div(2.0) - PADDING as f32,
         text_dimensions.width,
-        text_dimensions.height + padding.mul(2) as f32,
-        Color::from_hex(0xc0c0c0)
+        text_dimensions.height + PADDING.mul(2) as f32,
+        Color::from_hex(LINE_LENGTH_COLOR)
       );
 
       draw_text(
@@ -432,7 +426,7 @@ fn paint_line_lengths(graph: &DijkstraGraph, padding: &u8)
         position.x - text_center.x,
         position.y - text_center.y,
         20.0,
-        BLACK,
+        Color::from_hex(BG_COLOR)
       );
     });
 }

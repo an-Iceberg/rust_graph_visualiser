@@ -37,7 +37,7 @@ fn max_amount_of_points()
   // Creating graph and "adding" 1_000 points to it
   let graph = generate_random_points_graph(255);
   // The graph should still only have 100 points
-  assert_eq!(graph.size(), 101);
+  assert_eq!(graph.size(), 100);
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn shortest_path_small()
     graph.insert_small_graph();
     graph.set_start(2);
     graph.set_end(0);
-    assert!(graph.find_shortest_path());
+    graph.find_shortest_path();
 
     let should_path_1 = vec![2, 3, 4, 0];
     let should_path_2 = vec![2, 5, 7, 0];
@@ -127,7 +127,7 @@ fn shortest_path_small()
     graph.set_start(6);
     graph.set_end(8);
 
-    assert!(graph.find_shortest_path());
+    graph.find_shortest_path();
 
     match graph.get_path()
     {
@@ -144,10 +144,33 @@ fn shortest_path_small()
 }
 
 #[test]
+fn shortest_path_small_a()
+{
+  let mut graph = DijkstraGraph::new();
+  graph.insert_small_graph();
+  graph.set_start(2);
+  graph.set_end(4);
+  graph.find_shortest_path();
+
+  let should_path = vec![2, 3, 4];
+
+  match graph.get_path()
+  {
+    Some(path) =>
+    {
+      path.iter()
+        .zip(should_path.iter())
+        .for_each(|(path_id, should_id)|
+        { assert!(*path_id == *should_id); });
+    },
+    None => panic!("A path should have been found"),
+  }
+}
+
+#[test]
 fn shortest_path_medium()
 {
   let mut graph = DijkstraGraph::new();
-  // start: Some(4),
 
   // First end
   {
@@ -239,7 +262,7 @@ fn shortest_path_medium()
 
 // TODO: decrease all indices in add_line by 1
 #[test]
-fn shortest_path_large()
+fn shortest_path_large_a()
 {
   let mut graph = DijkstraGraph::new();
   graph.insert_large_graph();
@@ -248,6 +271,32 @@ fn shortest_path_large()
 
   graph.set_start(5);
   graph.set_end(8);
+
+  graph.find_shortest_path();
+
+  match graph.get_path()
+  {
+    Some(path) =>
+    {
+      path.iter()
+        .zip(should_path.iter())
+        .for_each(|(path_id, should_id)|
+        { assert_eq!(*path_id, *should_id); });
+    },
+    None => panic!("A path should have been found"),
+  }
+}
+
+#[test]
+fn shortest_path_large_b()
+{
+  let mut graph = DijkstraGraph::new();
+  graph.insert_large_graph();
+
+  let should_path = vec![6, 4, 1, 2, 16, 17, 18];
+
+  graph.set_start(6);
+  graph.set_end(18);
 
   graph.find_shortest_path();
 
@@ -328,7 +377,7 @@ fn no_possible_path()
   graph.set_start(0);
   graph.set_end(2);
 
-  assert!(!graph.find_shortest_path());
+  graph.find_shortest_path();
   assert!(graph.get_path().is_none());
 }
 

@@ -4,7 +4,7 @@ mod utils;
 
 use egui_macroquad::draw;
 use graph::*;
-use macroquad::prelude::*;
+use macroquad::{prelude::*, telemetry::disable};
 
 fn window_configuration() -> Conf
 {
@@ -27,11 +27,22 @@ pub(crate) enum Mode {
   Path,
 }
 
-// TODO: HEXAGONS
+// TODO: extract some variables as const
+pub(crate) const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+pub(crate) const UI_WIDTH: f32 = 200.;
+pub(crate) const PADDING: u8 = 3;
+pub(crate) const BG_COLOR: u32 = 0x400080;
+pub(crate) const PATH_COLOR: u32 = 0x00ff00;
+pub(crate) const LINE_COLOR: u32 = 0xff8000;
+pub(crate) const POINT_COLOR: u32 = 0x00ffff;
+pub(crate) const LINE_LENGTH_COLOR: u32 = 0xc0c0c0;
+
 // FIX: path from 6 to 18 is wrong, there exist a much shorter one (point 10 seems to cause that somehow)
 #[macroquad::main(window_configuration)]
 async fn main()
 {
+  disable();
+
   let mut graph = DijkstraGraph::new();
   // let mut start: Option<usize> = None;
   // let mut end: Option<usize> = None;
@@ -40,10 +51,10 @@ async fn main()
   // This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   let mut selected_point_id: Option<usize> = None;
 
-  let ui_width: f32 = 200.;
+  // let ui_width: f32 = 200.;
   let mut mode = Mode::Move;
 
-  let padding: u8 = 3;
+  // let padding: u8 = 3;
   let mut angle: f32 = 0.436;
   let mut arrow_head_length: f32 = 20.;
   let mut radius: f32 = 13.;
@@ -51,14 +62,16 @@ async fn main()
   let mut path_thickness: f32 = 2.;
   let mut base_point: f32 = 15.;
 
-  let mut bg_color: u32 = 0x400080;
-  let mut path_color: u32 = 0x00ff00;
-  let mut line_color: u32 = 0xff8000;
-  let mut point_color: u32 = 0x00ffff;
+  // let mut bg_color: u32 = 0x400080;
+  // let mut path_color: u32 = 0x00ff00;
+  // let mut line_color: u32 = 0xff8000;
+  // let mut point_color: u32 = 0x00ffff;
+
+  let mut hexagons: bool = false;
 
   loop
   {
-    clear_background(Color::from_hex(bg_color));
+    clear_background(Color::from_hex(BG_COLOR));
 
     // Delete or backspace clears the graph of all points and lines
     if is_key_pressed(KeyCode::Backspace) || is_key_pressed(KeyCode::Delete)
@@ -70,7 +83,7 @@ async fn main()
       mouse_position().1,
       radius,
       radius,
-      screen_width() - (ui_width + (3_f32 * radius)),
+      screen_width() - (UI_WIDTH + (3_f32 * radius)),
       screen_height() - (2_f32 * radius),
     )
     {
@@ -100,33 +113,24 @@ async fn main()
       &mut base_point,
       &mut selected_point_id,
       &mut line_length,
-      &mut path_color,
-      &mut line_color,
-      &mut point_color,
-      &mut bg_color
+      &mut hexagons,
     );
 
     // ! dbg
     if is_key_pressed(KeyCode::P)
     {
-      println!("Graph data:");
       graph.print_graph_data();
-      println!("Path data:");
-      graph.print_path();
     }
 
     utils::paint_graph(
       &graph, &radius,
       &path_thickness,
-      &padding,
       &angle,
       &base_point,
       &arrow_head_length,
       &mut hovered_point_id,
       &selected_point_id,
-      &path_color,
-      &line_color,
-      &point_color
+      &hexagons,
     );
 
     draw();

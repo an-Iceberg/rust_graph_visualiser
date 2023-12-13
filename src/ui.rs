@@ -1,6 +1,6 @@
-use crate::{graph::DijkstraGraph, Mode};
+use crate::{graph::DijkstraGraph, Mode, VERSION};
 use egui_macroquad::{
-  egui::{epaint::{Shadow, self}, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window, color_picker::{color_picker_color32, Alpha}, Color32},
+  egui::{epaint::{Shadow, self}, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window, color_picker::{color_picker_color32, Alpha}, Color32, Response, Ui, Sense, WidgetInfo, WidgetType, lerp, pos2, vec2, Widget},
   ui,
 };
 use macroquad::time::get_fps;
@@ -20,10 +20,7 @@ pub(crate) fn paint_ui(
   base_point: &mut f32,
   selected_point_id: &mut Option<usize>,
   line_length: &mut u16,
-  path_color: &u32,
-  line_color: &u32,
-  point_color: &u32,
-  bg_color: &u32,
+  hexagons: &mut bool,
 )
 {
   ui(|egui_context| {
@@ -126,6 +123,8 @@ pub(crate) fn paint_ui(
         });
 
         ui.separator();
+        ui.heading("✨Style✨");
+        ui.separator();
 
         ui.horizontal(|ui|
         {
@@ -170,6 +169,12 @@ pub(crate) fn paint_ui(
           if ui.button("Reset").clicked() { *path_thickness = 2.0; }
         });
 
+        ui.horizontal(|ui|
+        {
+          ui.label("Hexagons:");
+          ui.add(toggle(hexagons));
+        });
+
         /*
         ui.separator();
 
@@ -196,10 +201,46 @@ pub(crate) fn paint_ui(
 
         ui.horizontal(|ui|
         {
-          ui.label("v1.0.0");
+          ui.label(format!("v{}", VERSION.unwrap_or("unknown")));
           ui.separator();
           ui.label(format!("FPS:{}", get_fps()));
         });
       });
   });
 }
+
+fn toggle_ui(ui: &mut Ui, on: &mut bool) -> Response
+{
+  let desired_size = ui.spacing().interact_size.y * vec2(2.0, 1.0);
+  let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+  if response.clicked()
+  {
+    *on = !*on;
+    response.mark_changed();
+  }
+  response.widget_info(|| WidgetInfo::selected(WidgetType::Checkbox, *on, ""));
+
+  if ui.is_rect_visible(rect)
+  {
+    let how_on = ui.ctx().animate_bool(response.id, *on);
+    let visuals = ui.style().interact_selectable(&response, *on);
+    let rect = rect.expand(visuals.expansion);
+    let radius = 0.5 * rect.height();
+    ui.painter().rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
+    let circle_x = lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+    let center = pos2(circle_x, rect.center().y);
+    ui.painter().circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+  }
+
+  return response;
+}
+
+// A wrapper that allows the more idiomatic usage pattern: `ui.add(toggle(&mut my_bool))`
+/// iOS-style toggle switch.
+///
+/// ## Example:
+/// ``` ignore
+/// ui.add(toggle(&mut my_bool));
+/// ```
+pub(crate) fn toggle(on: &mut bool) -> impl Widget + '_
+{ move |ui: &mut Ui| toggle_ui(ui, on) }
