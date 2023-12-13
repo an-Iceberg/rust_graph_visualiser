@@ -8,8 +8,6 @@ use macroquad::{
 use std::ops::{Div, Mul};
 use crate::Mode;
 
-// TODO: HEXAGONS
-
 pub(crate) fn is_point_in_circle(
   point_x: f32, point_y: f32,
   circle_x: f32, circle_y: f32,
@@ -231,7 +229,7 @@ fn paint_path(graph: &DijkstraGraph, path_thiccness: &f32)
         from.y,
         to.x,
         to.y,
-        *path_thiccness + 2.,
+        *path_thiccness + 1.5,
         Color::from_hex(PATH_COLOR),
       );
     });

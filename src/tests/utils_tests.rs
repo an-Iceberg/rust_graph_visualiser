@@ -1,6 +1,5 @@
 use super::*;
 
-// TODO: extract each assertion into its own test
 #[test]
 pub(crate) fn circle_tests()
 {

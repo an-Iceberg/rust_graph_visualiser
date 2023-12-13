@@ -1,14 +1,12 @@
 use crate::{graph::DijkstraGraph, Mode, VERSION};
 use egui_macroquad::{
-  egui::{epaint::{Shadow, self}, Align2, Grid, Rounding, Slider, Vec2, Visuals, Window, color_picker::{color_picker_color32, Alpha}, Color32, Response, Ui, Sense, WidgetInfo, WidgetType, lerp, pos2, vec2, Widget},
+  egui::{epaint::Shadow, Align2, Rounding, Slider, Vec2, Visuals, Window, Response, Ui, Sense, WidgetInfo, WidgetType, lerp, pos2, vec2, Widget},
   ui,
 };
 use macroquad::time::get_fps;
 
-// TODO: make option to switch to hexagons for points
 // TODO: edit colour with hex values
 // TODO: make colours editable
-// TODO: HEXAGONS
 
 pub(crate) fn paint_ui(
   mode: &mut Mode,
@@ -168,6 +166,8 @@ pub(crate) fn paint_ui(
           ui.add(Slider::new(path_thickness, 1.0..=5.0));
           if ui.button("Reset").clicked() { *path_thickness = 2.0; }
         });
+
+        ui.separator();
 
         ui.horizontal(|ui|
         {

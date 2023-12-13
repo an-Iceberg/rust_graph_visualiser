@@ -49,16 +49,7 @@ impl DijkstraGraph
   { return DijkstraGraph { ..DijkstraGraph::default() }; }
 
   pub(crate) fn clear(&mut self)
-  {
-    self.points = self.points.iter()
-      .map(|_| None)
-      .collect::<Vec<_>>()
-      .try_into()
-      .unwrap();
-
-    self.start = None;
-    self.end = None;
-  }
+  { *self = DijkstraGraph::default(); }
 
   pub(crate) fn clear_path(&mut self)
   {
@@ -66,6 +57,7 @@ impl DijkstraGraph
     {
       let Some(point) = option.as_mut() else { continue; };
       point.parent = None;
+      point.distance = None;
       point.visited = false;
     }
   }
@@ -82,6 +74,7 @@ impl DijkstraGraph
   {
     if id > 100 { return; }
     if self.points[id].is_none() { self.points[id] = Some(DijkstraNode::new(x, y)); }
+    self.clear_path();
   }
 
   /// Inserts a node at the first missing instance of the array
@@ -95,12 +88,14 @@ impl DijkstraGraph
         return;
       }
     }
+    self.clear_path();
   }
 
   pub(crate) fn remove_point(&mut self, id: usize)
   {
     if id > 100 { return; }
     self.points[id] = None;
+    self.clear_path();
   }
 
   /// Adds a line; if it already exists, the length gets updated
@@ -121,6 +116,8 @@ impl DijkstraGraph
     }
 
     point.edges.push(Edge { destination: to, distance });
+
+    self.clear_path();
   }
 
   pub(crate) fn remove_line(&mut self, from: usize, to: usize)
@@ -128,7 +125,9 @@ impl DijkstraGraph
     if from > 100 || to > 100 { return; }
 
     let Some(from_point) = self.points[from].as_mut() else { return; };
-    from_point.edges.remove(to);
+    from_point.edges.retain(|edge| edge.destination != to);
+
+    self.clear_path();
   }
 
   pub(crate) fn get(&self, id: usize) -> &Option<DijkstraNode>
@@ -144,10 +143,14 @@ impl DijkstraGraph
   {
     if start > 100 { return; }
     self.start = Some(start);
+    self.clear_path();
   }
 
   pub(crate) fn clear_start(&mut self)
-  { self.start = None; }
+  {
+    self.start = None;
+    self.clear_path();
+  }
 
   pub(crate) fn end(&self) -> Option<usize>
   { return self.end; }
@@ -156,10 +159,14 @@ impl DijkstraGraph
   {
     if end > 100 { return; }
     self.end = Some(end);
+    self.clear_path();
   }
 
   pub(crate) fn clear_end(&mut self)
-  { self.end = None; }
+  {
+    self.end = None;
+    self.clear_path();
+  }
 
   /// Returns true if the shortest path has been found
   pub(crate) fn find_shortest_path(&mut self)
@@ -170,18 +177,18 @@ impl DijkstraGraph
 
     self.clear_path();
 
+    // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
+
     self.points[self.start.unwrap()].as_mut().unwrap().distance = Some(0);
     self.points[self.start.unwrap()].as_mut().unwrap().parent = Some(self.start.unwrap());
 
     let mut unvisited_points = vec![];
     unvisited_points.push(self.start.unwrap());
     let mut current_id;
-    let mut path_length: u16; // TODO: this
+    let mut possible_path_length = u16::MAX;
 
-    // --- DIJKSTRA'S SHORTEST PATH ALGORITHM ---
     while !unvisited_points.is_empty()
     {
-      /*
       unvisited_points.sort_by(|a, b|
       {
         // It is basically impossible, that unvisited_points contains ids that aren't in the graph
@@ -197,7 +204,6 @@ impl DijkstraGraph
           (Some(dist_a), Some(dist_b)) => return dist_a.cmp(&dist_b),
         };
       });
-      */
 
       /*
       // Removing all points that have been marked as visited
@@ -211,6 +217,11 @@ impl DijkstraGraph
       if self.points[current_id].is_none() { continue; }
 
       let current_point = self.points[current_id].as_mut().unwrap();
+      if current_id == self.end.unwrap()
+      {
+        if current_point.distance.unwrap() < possible_path_length { possible_path_length = current_point.distance.unwrap(); }
+        continue;
+      };
       current_point.visited = true;
       let current_point_distance = current_point.distance.clone().unwrap();
       let edges = current_point.edges.clone();
@@ -219,14 +230,17 @@ impl DijkstraGraph
 
       for edge in edges
       {
+        let possibly_lower_goal = current_point_distance + edge.distance;
+
+        if possibly_lower_goal > possible_path_length { continue; }
+
         let Some(neighbour) = self.points[edge.destination].as_mut() else { return; };
 
         if !neighbour.visited
         { unvisited_points.push(edge.destination); }
 
-        let possibly_lower_goal = current_point_distance + edge.distance;
-
-        if neighbour.distance.is_none() || neighbour.distance.unwrap() > possibly_lower_goal
+        // TODO: if both are same then toss coin
+        if neighbour.distance.is_none() || neighbour.distance.unwrap() > possibly_lower_goal || (neighbour.distance.unwrap() == possibly_lower_goal && rand::random())
         {
           neighbour.distance = Some(possibly_lower_goal);
           neighbour.parent = Some(current_id);
@@ -336,14 +350,14 @@ impl DijkstraGraph
   {
     self.clear();
 
-    self.append_point(942_f32, 355_f32);
-    self.append_point(720_f32, 208_f32);
-    self.append_point(198_f32, 342_f32);
-    self.append_point(463_f32, 507_f32);
-    self.append_point(735_f32, 513_f32);
-    self.append_point(458_f32, 346_f32);
-    self.append_point(468_f32, 202_f32);
-    self.append_point(721_f32, 360_f32);
+    self.append_point(942., 355.);
+    self.append_point(720., 208.);
+    self.append_point(198., 342.);
+    self.append_point(463., 507.);
+    self.append_point(735., 513.);
+    self.append_point(458., 346.);
+    self.append_point(468., 202.);
+    self.append_point(721., 360.);
 
     self.add_line(3, 4, 3);
     self.add_line(2, 5, 5);
@@ -365,18 +379,18 @@ impl DijkstraGraph
   {
     self.clear();
 
-    self.append_point(959_f32, 211_f32);
-    self.append_point(967_f32, 394_f32);
-    self.append_point(946_f32, 532_f32);
-    self.append_point(144_f32, 377_f32);
-    self.append_point(775_f32, 295_f32);
-    self.append_point(734_f32, 523_f32);
-    self.append_point(559_f32, 493_f32);
-    self.append_point(570_f32, 361_f32);
-    self.append_point(569_f32, 200_f32);
-    self.append_point(353_f32, 206_f32);
-    self.append_point(355_f32, 350_f32);
-    self.append_point(342_f32, 488_f32);
+    self.append_point(959., 211.);
+    self.append_point(967., 394.);
+    self.append_point(946., 532.);
+    self.append_point(144., 377.);
+    self.append_point(775., 295.);
+    self.append_point(734., 523.);
+    self.append_point(559., 493.);
+    self.append_point(570., 361.);
+    self.append_point(569., 200.);
+    self.append_point(353., 206.);
+    self.append_point(355., 350.);
+    self.append_point(342., 488.);
 
     self.add_line(10, 6, 4);
     self.add_line(7, 1, 5);
@@ -401,32 +415,32 @@ impl DijkstraGraph
   {
     self.clear();
 
-    self.append_point(595_f32, 640_f32);
-    self.append_point(864_f32, 300_f32);
-    self.append_point(550_f32, 369_f32);
-    self.append_point(280_f32, 606_f32);
-    self.append_point(748_f32, 127_f32);
-    self.append_point(177_f32, 71_f32);
-    self.append_point(467_f32, 84_f32);
-    self.append_point(260_f32, 431_f32);
-    self.append_point(928_f32, 642_f32);
-    self.append_point(466_f32, 181_f32);
-    self.append_point(433_f32, 27_f32);
-    self.append_point(667_f32, 52_f32);
-    self.append_point(847_f32, 75_f32);
-    self.append_point(734_f32, 270_f32);
-    self.append_point(931_f32, 233_f32);
-    self.append_point(904_f32, 389_f32);
-    self.append_point(423_f32, 467_f32);
-    self.append_point(445_f32, 551_f32);
-    self.append_point(691_f32, 559_f32);
+    self.append_point(595., 640.);
+    self.append_point(864., 300.);
+    self.append_point(550., 369.);
+    self.append_point(280., 606.);
+    self.append_point(748., 127.);
+    self.append_point(177., 71.);
+    self.append_point(467., 84.);
+    self.append_point(260., 431.);
+    self.append_point(928., 642.);
+    self.append_point(466., 181.);
+    self.append_point(433., 27.);
+    self.append_point(667., 52.);
+    self.append_point(847., 75.);
+    self.append_point(734., 270.);
+    self.append_point(931., 233.);
+    self.append_point(904., 389.);
+    self.append_point(423., 467.);
+    self.append_point(445., 551.);
+    self.append_point(691., 559.);
 
     self.add_line(11, 12, 1);
     self.add_line(5, 7, 12);
     self.add_line(13, 2, 1);
     self.add_line(15, 8, 10);
     self.add_line(14, 8, 14);
-    self.add_line(1, 18, 9);
+    self.add_line(1, 18, 10);
     self.add_line(17, 18, 3);
     self.add_line(16, 17, 2);
     self.add_line(7, 3, 1);

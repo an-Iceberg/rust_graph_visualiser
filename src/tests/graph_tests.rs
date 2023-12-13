@@ -1,13 +1,13 @@
 use super::DijkstraGraph;
 use rand::*;
 
-const RADIUS: f32 = 13_f32;
+const RADIUS: f32 = 13.;
 
 fn random_x(radius: f32) -> f32
-{ return thread_rng().gen_range(radius..(1290_f32 - 200_f32 - radius)); }
+{ return thread_rng().gen_range(radius..(1290. - 200. - radius)); }
 
 fn random_y(radius: f32) -> f32
-{ return thread_rng().gen_range(radius..(720_f32 - radius)); }
+{ return thread_rng().gen_range(radius..(720. - radius)); }
 
 fn generate_random_points_graph(amount_of_points: u8) -> DijkstraGraph
 {
@@ -83,15 +83,15 @@ fn shortest_path_small()
   {
     let mut graph = DijkstraGraph::new();
 
-    graph.append_point(783_f32, 102_f32);
-    graph.append_point(412_f32, 295_f32);
-    graph.append_point(680_f32, 308_f32);
-    graph.append_point(509_f32, 459_f32);
-    graph.append_point(330_f32, 603_f32);
-    graph.append_point(160_f32, 442_f32);
-    graph.append_point(174_f32, 196_f32);
-    graph.append_point(411_f32, 78_f32);
-    graph.append_point(1003_f32, 239_f32);
+    graph.append_point(783., 102.);
+    graph.append_point(412., 295.);
+    graph.append_point(680., 308.);
+    graph.append_point(509., 459.);
+    graph.append_point(330., 603.);
+    graph.append_point(160., 442.);
+    graph.append_point(174., 196.);
+    graph.append_point(411., 78.);
+    graph.append_point(1003., 239.);
 
     graph.add_line(3, 4, 2);
     graph.add_line(2, 3, 3);
@@ -168,9 +168,27 @@ fn shortest_path_small_a()
 }
 
 #[test]
+fn find_shortest_path_multiple_calls()
+{
+  let mut graph = DijkstraGraph::new();
+  graph.insert_small_graph();
+  graph.set_start(2);
+  graph.set_end(0);
+  graph.find_shortest_path();
+  graph.set_start(2);
+  graph.set_end(4);
+  graph.find_shortest_path();
+  graph.find_shortest_path();
+  graph.find_shortest_path();
+
+  assert!(graph.get_path().is_some());
+}
+
+#[test]
 fn shortest_path_medium()
 {
   let mut graph = DijkstraGraph::new();
+  graph.insert_medium_graph();
 
   // First end
   {
@@ -237,8 +255,8 @@ fn shortest_path_medium()
 
   // Third end
   {
-    let should_path_1 = vec![3, 10, 7, 5, 2];
-    let should_path_2 = vec![3, 11, 7, 5, 2];
+    let should_path_1 = vec![3, 10, 6, 5, 2];
+    let should_path_2 = vec![3, 11, 6, 5, 2];
 
     graph.set_start(3);
     graph.set_end(2);
@@ -260,7 +278,6 @@ fn shortest_path_medium()
   }
 }
 
-// TODO: decrease all indices in add_line by 1
 #[test]
 fn shortest_path_large_a()
 {
@@ -318,19 +335,19 @@ fn start_and_end_are_within_graph()
 {
   let mut graph = DijkstraGraph::new();
 
-  graph.add_point(1, 970_f32, 108_f32);
-  graph.add_point(2, 991_f32, 340_f32);
-  graph.add_point(3, 1023_f32, 580_f32);
-  graph.add_point(4, 509_f32, 459_f32);
-  graph.add_point(5, 750_f32, 537_f32);
-  graph.add_point(6, 747_f32, 262_f32);
-  graph.add_point(7, 535_f32, 237_f32);
-  graph.add_point(8, 497_f32, 433_f32);
-  graph.add_point(9, 352_f32, 379_f32);
-  graph.add_point(10, 308_f32, 266_f32);
-  graph.add_point(16, 163_f32, 205_f32);
-  graph.add_point(17, 149_f32, 346_f32);
-  graph.add_point(18, 620_f32, 550_f32);
+  graph.add_point(1, 970., 108.);
+  graph.add_point(2, 991., 340.);
+  graph.add_point(3, 1023., 580.);
+  graph.add_point(4, 509., 459.);
+  graph.add_point(5, 750., 537.);
+  graph.add_point(6, 747., 262.);
+  graph.add_point(7, 535., 237.);
+  graph.add_point(8, 497., 433.);
+  graph.add_point(9, 352., 379.);
+  graph.add_point(10, 308., 266.);
+  graph.add_point(16, 163., 205.);
+  graph.add_point(17, 149., 346.);
+  graph.add_point(18, 620., 550.);
 
   graph.add_line(5, 4, 2);
   graph.add_line(18, 5, 7);
@@ -386,15 +403,15 @@ fn disconnected_graph()
 {
   let mut graph = DijkstraGraph::new();
 
-  graph.append_point(888_f32, 135_f32);
-  graph.append_point(595_f32, 138_f32);
-  graph.append_point(267_f32, 120_f32);
-  graph.append_point(230_f32, 347_f32);
-  graph.append_point(553_f32, 379_f32);
-  graph.append_point(905_f32, 390_f32);
-  graph.append_point(895_f32, 649_f32);
-  graph.append_point(479_f32, 634_f32);
-  graph.append_point(187_f32, 607_f32);
+  graph.append_point(888., 135.);
+  graph.append_point(595., 138.);
+  graph.append_point(267., 120.);
+  graph.append_point(230., 347.);
+  graph.append_point(553., 379.);
+  graph.append_point(905., 390.);
+  graph.append_point(895., 649.);
+  graph.append_point(479., 634.);
+  graph.append_point(187., 607.);
 
   graph.add_line(8, 7, 20);
   graph.add_line(2, 1, 20);
@@ -412,24 +429,23 @@ fn disconnected_graph()
   assert!(graph.get_path().is_none());
 }
 
-// TODO: decrease all indices in add_line by 1
 #[test]
 fn cyclical_valid_path()
 {
   let mut graph = DijkstraGraph::new();
 
-  graph.append_point(899_f32, 490_f32);
-  graph.append_point(941_f32, 618_f32);
-  graph.append_point(710_f32, 621_f32);
-  graph.append_point(777_f32, 390_f32);
-  graph.append_point(698_f32, 200_f32);
-  graph.append_point(497_f32, 185_f32);
-  graph.append_point(379_f32, 367_f32);
-  graph.append_point(556_f32, 541_f32);
-  graph.append_point(403_f32, 574_f32);
-  graph.append_point(207_f32, 434_f32);
-  graph.append_point(238_f32, 257_f32);
-  graph.append_point(554_f32, 41_f32);
+  graph.append_point(899., 490.);
+  graph.append_point(941., 618.);
+  graph.append_point(710., 621.);
+  graph.append_point(777., 390.);
+  graph.append_point(698., 200.);
+  graph.append_point(497., 185.);
+  graph.append_point(379., 367.);
+  graph.append_point(556., 541.);
+  graph.append_point(403., 574.);
+  graph.append_point(207., 434.);
+  graph.append_point(238., 257.);
+  graph.append_point(554., 41.);
 
   graph.add_line(6, 10, 1);
   graph.add_line(5, 11, 1);
