@@ -310,8 +310,8 @@ fn shortest_path_large_b()
   let mut graph = DijkstraGraph::new();
   graph.insert_large_graph();
 
-  // TODO: add second valid path
-  let should_path = vec![6, 4, 1, 2, 16, 17, 18];
+  let should_path1 = vec![6, 4, 1, 2, 16, 17, 18];
+  let should_path2 = vec![6, 4, 1, 18];
 
   graph.set_start(6);
   graph.set_end(18);
@@ -323,9 +323,10 @@ fn shortest_path_large_b()
     Some(path) =>
     {
       path.iter()
-        .zip(should_path.iter())
-        .for_each(|(path_id, should_id)|
-        { assert_eq!(*path_id, *should_id); });
+        .zip(should_path1.iter())
+        .zip(should_path2.iter())
+        .for_each(|((path_id, should_id1), should_id2)|
+        { assert!(*path_id == *should_id1 || *path_id == *should_id2); });
     },
     None => panic!("A path should have been found"),
   }

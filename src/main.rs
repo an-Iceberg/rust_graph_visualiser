@@ -35,8 +35,8 @@ pub(crate) const BG_COLOR: u32 = 0x400080;
 pub(crate) const PATH_COLOR: u32 = 0x00ff00;
 pub(crate) const LINE_COLOR: u32 = 0x00c0c0;
 pub(crate) const POINT_COLOR: u32 = 0xff8000;
-pub(crate) const LINE_LENGTH_COLOR: u32 = 0xc09a9a;
-pub(crate) const  UI_SPACE: f32 = 225.;
+pub(crate) const LINE_LENGTH_COLOR: u32 = 0xc09ac0;
+pub(crate) const  UI_SPACING: f32 = 229.;
 
 #[macroquad::main(window_configuration)]
 async fn main()

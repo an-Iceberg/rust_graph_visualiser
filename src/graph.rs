@@ -439,7 +439,7 @@ impl DijkstraGraph
     self.add_line(13, 2, 1);
     self.add_line(15, 8, 10);
     self.add_line(14, 8, 14);
-    self.add_line(1, 18, 10); // TODO: reduce length to 9
+    self.add_line(1, 18, 9);
     self.add_line(17, 18, 3);
     self.add_line(16, 17, 2);
     self.add_line(7, 3, 1);

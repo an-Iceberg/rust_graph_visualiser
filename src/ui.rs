@@ -1,4 +1,6 @@
-use crate::{graph::DijkstraGraph, Mode, VERSION, AUTHORS, UI_SPACE};
+use std::ops::Mul;
+
+use crate::{graph::DijkstraGraph, Mode, VERSION, AUTHORS, UI_SPACING};
 
 use egui_macroquad::{
   egui::{epaint::Shadow, Align2, Rounding, Slider, Vec2, Visuals, Window, Color32, Stroke},
@@ -35,7 +37,7 @@ pub(crate) fn paint_ui(
       },
       window_fill: Color32::from_rgb(32, 0, 64),
       window_stroke: Stroke::new(2., Color32::from_rgb(0, 192, 192)),
-      override_text_color: Some(Color32::from_rgb(216, 167, 215)),
+      override_text_color: Some(Color32::from_rgb(255, 210, 255)),
       // widgets: Widgets::style(&self, response),
       ..Default::default()
     });
@@ -114,11 +116,11 @@ pub(crate) fn paint_ui(
 
         ui.add_space(match (&mode, selected_point_id)
         {
-          (Mode::Move, _) => UI_SPACE,
-          (Mode::Line, None) => UI_SPACE-33.,
-          (Mode::Line, Some(_)) => UI_SPACE-75.,
-          (Mode::Point, _) => UI_SPACE-14.,
-          (Mode::Path, _) => UI_SPACE-58.
+          (Mode::Move, _) => UI_SPACING,
+          (Mode::Line, None) => UI_SPACING-33.,
+          (Mode::Line, Some(_)) => UI_SPACING-75.,
+          (Mode::Point, _) => UI_SPACING-14.,
+          (Mode::Path, _) => UI_SPACING-58.
         });
 
         ui.separator();
@@ -139,14 +141,10 @@ pub(crate) fn paint_ui(
         ui.separator();
         ui.heading("✨Style✨");
         ui.separator();
+        ui.checkbox(hexagons, "Hexagons");
+        ui.separator();
 
-        ui.horizontal(|ui|
-        {
-          // TODO: print angle as plain text
-          ui.label("Angle:");
-          ui.add_enabled_ui(false, |ui|
-          { ui.drag_angle(angle); });
-        });
+        ui.label(format!("Angle: {:.2}°", angle.mul(180./3.14159265)));
 
         ui.horizontal(|ui|
         {
@@ -183,10 +181,6 @@ pub(crate) fn paint_ui(
           ui.add(Slider::new(path_thickness, 1.0..=5.0));
           if ui.button("Reset").clicked() { *path_thickness = 2.0; }
         });
-
-        ui.separator();
-
-        ui.checkbox(hexagons, "Hexagons");
 
         /*
         ui.separator();
