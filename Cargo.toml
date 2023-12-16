@@ -1,6 +1,6 @@
 [package]
 name = "rust_graph_visualiser"
-version = "1.9.4"
+version = "1.9.5"
 edition = "2021"
 authors = ["Sandra"]
 repository = "https://github.com/an-Iceberg/rust_graph_visualiser"

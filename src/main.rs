@@ -8,7 +8,6 @@ mod medium_icon;
 #[path ="icons/big.rs"]
 mod big_icon;
 
-
 use egui_macroquad::draw;
 use graph::*;
 use macroquad::{prelude::*, telemetry::disable, miniquad::conf::Icon};
@@ -17,6 +16,8 @@ use macroquad::{prelude::*, telemetry::disable, miniquad::conf::Icon};
 
 fn window_configuration() -> Conf
 {
+  // This is used to generate the icons for macroquad
+  // The output is put into an array and baked into the executable
   /*
   let small: [u8; 1024] = image::open("16x16.png").unwrap().to_rgba8().to_vec().try_into().unwrap();
   let medium: [u8; 4096] = image::open("32x32.png").unwrap().to_rgba8().to_vec().try_into().unwrap();
@@ -36,7 +37,7 @@ fn window_configuration() -> Conf
 
   return Conf
   {
-    window_title: "Graph Visualiser".to_string(),
+    window_title: "Rust Graph Visualiser".to_string(),
     window_width: 1290,
     window_height: 720,
     fullscreen: false,

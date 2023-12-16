@@ -954,7 +954,7 @@ dependencies = [
 
 [[package]]
 name = "rust_graph_visualiser"
-version = "1.9.4"
+version = "1.9.5"
 dependencies = [
  "egui 0.22.0",
  "egui-macroquad",
