@@ -1,6 +1,6 @@
 [package]
 name = "rust_graph_visualiser"
-version = "1.9.3"
+version = "1.9.4"
 edition = "2021"
 authors = ["Sandra"]
 repository = "https://github.com/an-Iceberg/rust_graph_visualiser"
@@ -10,5 +10,6 @@ repository = "https://github.com/an-Iceberg/rust_graph_visualiser"
 [dependencies]
 egui = "0.22.0"
 egui-macroquad = "0.15.0"
+image = "0.24.7"
 macroquad = "0.3.26"
 rand = "0.8.5"

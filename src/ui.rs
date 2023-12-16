@@ -7,8 +7,7 @@ use egui_macroquad::{
   ui,
 };
 
-
-// TODO: edit colour with hex values
+// TODO: light theme
 // TODO: make colours editable
 
 pub(crate) fn paint_ui(

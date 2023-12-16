@@ -173,7 +173,6 @@ pub(crate) fn paint_graph(
   // Paint points
   paint_points(graph, radius, hovered_point_id, selected_point_id, hexagons);
 
-  // TODO: consider replacing this with Option::inspect
   // Paints start label
   if let Some(start_id) = graph.start()
   {
@@ -181,7 +180,6 @@ pub(crate) fn paint_graph(
     { paint_label("Start", start_point.x, start_point.y, &radius); }
   }
 
-  // TODO: consider replacing this with Option::inspect
   // Paints end label
   if let Some(end_id) = graph.end()
   {

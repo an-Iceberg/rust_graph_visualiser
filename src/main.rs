@@ -1,13 +1,39 @@
 mod graph;
 mod ui;
 mod utils;
+#[path ="icons/small.rs"]
+mod small_icon;
+#[path ="icons/medium.rs"]
+mod medium_icon;
+#[path ="icons/big.rs"]
+mod big_icon;
+
 
 use egui_macroquad::draw;
 use graph::*;
-use macroquad::{prelude::*, telemetry::disable};
+use macroquad::{prelude::*, telemetry::disable, miniquad::conf::Icon};
+// use std::{fs::File, io::Write};
+// use image;
 
 fn window_configuration() -> Conf
 {
+  /*
+  let small: [u8; 1024] = image::open("16x16.png").unwrap().to_rgba8().to_vec().try_into().unwrap();
+  let medium: [u8; 4096] = image::open("32x32.png").unwrap().to_rgba8().to_vec().try_into().unwrap();
+  let big: [u8; 16384] = image::open("64x64.png").unwrap().to_rgba8().to_vec().try_into().unwrap();
+
+  let mut small_file = File::create("small.txt").unwrap();
+  let mut medium_file = File::create("medium.txt").unwrap();
+  let mut big_file = File::create("big.txt").unwrap();
+
+  small.iter().for_each(|byte|
+  { write!(small_file, "0x{:02x}, ", byte); });
+  medium.iter().for_each(|byte|
+  { write!(medium_file, "0x{:02x}, ", byte); });
+  big.iter().for_each(|byte|
+  { write!(big_file, "0x{:02x}, ", byte); });
+  */
+
   return Conf
   {
     window_title: "Graph Visualiser".to_string(),
@@ -15,6 +41,12 @@ fn window_configuration() -> Conf
     window_height: 720,
     fullscreen: false,
     window_resizable: false,
+    icon: Some(Icon
+      {
+        small: small_icon::give(),
+        medium: medium_icon::give(),
+        big: big_icon::give()
+      }),
     ..Conf::default()
   };
 }
@@ -44,28 +76,19 @@ async fn main()
   disable();
 
   let mut graph = DijkstraGraph::new();
-  // let mut start: Option<usize> = None;
-  // let mut end: Option<usize> = None;
   // This is the id of the point that the mouse is currently hovering over
   let mut hovered_point_id: Option<usize> = None;
   // This is the id of the point the mouse is currently hovering over and mouse 1 is pressed
   let mut selected_point_id: Option<usize> = None;
 
-  // let ui_width: f32 = 200.;
   let mut mode = Mode::Move;
 
-  // let padding: u8 = 3;
   let mut angle: f32 = 0.436;
   let mut arrow_head_length: f32 = 20.;
   let mut radius: f32 = 13.;
   let mut line_length: u16 = 1;
   let mut path_thickness: f32 = 2.;
   let mut base_point: f32 = 15.;
-
-  // let mut bg_color: u32 = 0x400080;
-  // let mut path_color: u32 = 0x00ff00;
-  // let mut line_color: u32 = 0xff8000;
-  // let mut point_color: u32 = 0x00ffff;
 
   let mut hexagons: bool = false;
 
@@ -102,7 +125,6 @@ async fn main()
     }
 
     // --- GUI ---
-    // TODO: style the GUI
     ui::paint_ui(
       &mut mode,
       &mut graph,

@@ -67,14 +67,7 @@ fn shortest_path_small()
 
     match graph.get_path()
     {
-      Some(path) =>
-      {
-        path.iter()
-          .zip(should_path_1.iter())
-          .zip(should_path_2.iter())
-          .for_each(|((path_id, should_id_1), should_id_2)|
-          { assert!(*path_id == *should_id_1 || *path_id == *should_id_2); });
-      },
+      Some(path) => assert!(path == should_path_1 || path == should_path_2),
       None => panic!("A path should have been found"),
     }
   }
@@ -131,13 +124,7 @@ fn shortest_path_small()
 
     match graph.get_path()
     {
-      Some(path) =>
-      {
-        path.iter()
-          .zip(should_path.iter())
-          .for_each(|(path_id, should_id)|
-          { assert_eq!(*path_id, *should_id); });
-      },
+      Some(path) => assert!(path == should_path),
       None => panic!("A path should have been found"),
     }
   }
@@ -156,13 +143,7 @@ fn shortest_path_small_a()
 
   match graph.get_path()
   {
-    Some(path) =>
-    {
-      path.iter()
-        .zip(should_path.iter())
-        .for_each(|(path_id, should_id)|
-        { assert!(*path_id == *should_id); });
-    },
+    Some(path) => assert!(path == should_path),
     None => panic!("A path should have been found"),
   }
 }
@@ -203,15 +184,7 @@ fn shortest_path_medium()
 
     match graph.get_path()
     {
-      Some(ref path) =>
-      {
-        path.iter()
-          .zip(should_path_1.iter())
-          .zip(should_path_2.iter())
-          .zip(should_path_3.iter())
-          .for_each(|(((path_id, should_id_1), should_id_2), should_id_3)|
-          { assert!(*path_id == *should_id_1 || *path_id == *should_id_2 || *path_id == *should_id_3); });
-      },
+      Some(path) => assert!(path == should_path_1 || path == should_path_2 || path == should_path_3),
       None => panic!("A path should have been found"),
     }
   }
@@ -231,24 +204,7 @@ fn shortest_path_medium()
 
     match graph.get_path()
     {
-      Some(ref path) =>
-      {
-        path.iter()
-          .zip(should_path_1.iter())
-          .zip(should_path_2.iter())
-          .zip(should_path_3.iter())
-          .zip(should_path_4.iter())
-          .zip(should_path_5.iter())
-          .for_each(|(((((path_id, should_id_1), should_id_2), should_id_3), should_id_4), should_id_5)| {
-            assert!(
-              *path_id == *should_id_1
-                || *path_id == *should_id_2
-                || *path_id == *should_id_3
-                || *path_id == *should_id_4
-                || *path_id == *should_id_5
-            );
-          });
-      },
+      Some(path) => assert!(path == should_path_1 || path == should_path_2 || path == should_path_3 || path == should_path_4 || path == should_path_5),
       None => panic!("A path should have been found"),
     }
   }
@@ -265,14 +221,7 @@ fn shortest_path_medium()
 
     match graph.get_path()
     {
-      Some(ref path) =>
-      {
-        path.iter()
-          .zip(should_path_1.iter())
-          .zip(should_path_2.iter())
-          .for_each(|((path_id, should_id_1), should_id_2)|
-          { assert!(*path_id == *should_id_1 || *path_id == *should_id_2); });
-      },
+      Some(path) => assert!(path == should_path_1 || path == should_path_2),
       None => panic!("A path should have been found"),
     }
   }
@@ -293,13 +242,7 @@ fn shortest_path_large_a()
 
   match graph.get_path()
   {
-    Some(path) =>
-    {
-      path.iter()
-        .zip(should_path.iter())
-        .for_each(|(path_id, should_id)|
-        { assert_eq!(*path_id, *should_id); });
-    },
+    Some(path) => assert!(path == should_path),
     None => panic!("A path should have been found"),
   }
 }
@@ -320,14 +263,7 @@ fn shortest_path_large_b()
 
   match graph.get_path()
   {
-    Some(path) =>
-    {
-      path.iter()
-        .zip(should_path1.iter())
-        .zip(should_path2.iter())
-        .for_each(|((path_id, should_id1), should_id2)|
-        { assert!(*path_id == *should_id1 || *path_id == *should_id2); });
-    },
+    Some(path) => assert!(path == should_path1 || path == should_path2),
     None => panic!("A path should have been found"),
   }
 }
@@ -376,13 +312,7 @@ fn start_and_end_are_within_graph()
 
   match graph.get_path()
   {
-    Some(path) =>
-    {
-      path.iter()
-        .zip(should_path.iter())
-        .for_each(|(path_id, should_id)|
-        { assert_eq!(*path_id, *should_id); });
-    },
+    Some(path) => assert!(path == should_path),
     None => panic!("A path should have been found"),
   }
 }
@@ -471,13 +401,7 @@ fn cyclical_valid_path()
 
   match graph.get_path()
   {
-    Some(path) =>
-    {
-      path.iter()
-        .zip(should_path.iter())
-        .for_each(|(path_id, should_id)|
-        { assert_eq!(*path_id, *should_id); });
-    },
+    Some(path) => assert!(path == should_path),
     None => panic!("A path should have been found"),
   }
 }
